@@ -375,3 +375,6 @@ fieldset.q label { display: block; padding: 4px 0; }
 .pdf-doc .table-wrap { overflow: visible; }
 .pdf-doc tr, .pdf-doc li { break-inside: avoid; }
 .pdf-doc pre { white-space: pre-wrap; break-inside: avoid; }
+
+/* Code blocks not yet run against a workspace */
+pre[data-tested="no"]::before { content: "Not run against a workspace"; display: block; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--code-dim); margin-bottom: 6px; }

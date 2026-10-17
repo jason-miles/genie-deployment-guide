@@ -5,11 +5,11 @@
   },
   "onboarding-checklist.pdf": {
     "source": "onboarding-checklist",
-    "sha256": "b4fbad83f5b411def9bae6bd67060a5e85053b73d61c37894c58ceb7ed58d624"
+    "sha256": "d6627dfa56cc48d02e5352d05cd2d9c5de97c14d84741c00dcefef4c06b67b13"
   },
   "benchmark-checklist.pdf": {
     "source": "benchmark-checklist",
-    "sha256": "94868d65c783b9679b275f54e7619344b0897796293de57e988006d54cf66443"
+    "sha256": "f263e8c203acfc60e1277548e57f73c13501fd893e880eafc11f0aa1d33a0273"
   },
   "genie-one-agent-code.pdf": {
     "source": "genie-one-agent-code",

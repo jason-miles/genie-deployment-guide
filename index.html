@@ -56,7 +56,7 @@
 <header class="hero">
   <div class="eyebrow">Databricks &middot; Genie</div>
   <h1>Genie deployment guide: from proof of concept to enterprise rollout</h1>
-  <p>Eight steps for taking a Genie Agent from a working demo to a governed, monitored service. Each step gives the action, the gate to pass, and the failure modes seen in practice.</p>
+  <p>Eight steps for taking a Genie Agent from a working demo to a governed, monitored service. Each step gives the action, the gate to pass, and the failure modes seen in practice. Commands in this guide have not been run against a workspace yet; each code block is labelled, so check them in a non-production workspace first.</p>
 </header>
 
 <section class="shelf" aria-labelledby="shelf-h">
@@ -239,7 +239,7 @@
 
   <h3>1.5 Check the data model against the questions</h3>
   <p>Review the technical stakeholder&rsquo;s data model before building. Look for a few tables joined by defined primary and foreign keys, ideally a star schema with one fact table at one grain. Avoid duplicate or near-identical column names, mixed currencies, categorical columns with hundreds of distinct values used in filters, and calculations done on the fly. Put calculations in derived columns or views. Run the following to see how much documentation exists:</p>
-<pre data-lang="sql"><code>-- Table-level descriptions for the candidate schema
+<pre data-lang="sql" data-tested="no"><code>-- Table-level descriptions for the candidate schema
 SELECT table_name, comment
 FROM {{cat:main}}.information_schema.tables
 WHERE table_schema = '{{sch:sales}}';
@@ -295,7 +295,7 @@ WHERE table_schema = '{{sch:sales}}' AND (comment IS NULL OR comment = '');</cod
     <li><label><input type="checkbox"><span>Dates are stored as DATE or TIMESTAMP, not strings.</span></label></li>
   </ul>
   <p><strong>Should have</strong>: primary and foreign keys, and governance tags for PII and sensitivity. <strong>Good to have</strong>: <code>OPTIMIZE</code> unless predictive optimisation is on, and a documented freshness cadence.</p>
-<pre data-lang="sql"><code>COMMENT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
+<pre data-lang="sql" data-tested="no"><code>COMMENT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
   IS 'One row per customer order. Refreshed daily.';
 
 ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
@@ -339,11 +339,11 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} ADD CONSTRAINT orders_pk P
   </div>
 
   <h3>2.6 Grant access with Unity Catalog</h3>
-<pre data-lang="sql"><code>GRANT USE CATALOG ON CATALOG {{cat:main}} TO `{{grp:analysts}}`;
+<pre data-lang="sql" data-tested="no"><code>GRANT USE CATALOG ON CATALOG {{cat:main}} TO `{{grp:analysts}}`;
 GRANT USE SCHEMA ON SCHEMA {{cat:main}}.{{sch:sales}} TO `{{grp:analysts}}`;
 GRANT SELECT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} TO `{{grp:analysts}}`;</code></pre>
   <p>Row filters and column masks defined in Unity Catalog apply to Genie answers based on the querying user.</p>
-<pre data-lang="sql"><code>CREATE FUNCTION {{cat:main}}.{{sch:sales}}.region_filter(region STRING)
+<pre data-lang="sql" data-tested="no"><code>CREATE FUNCTION {{cat:main}}.{{sch:sales}}.region_filter(region STRING)
   RETURN is_account_group_member('global_sales') OR region = 'EMEA';
 ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
   SET ROW FILTER {{cat:main}}.{{sch:sales}}.region_filter ON (region);
@@ -413,7 +413,7 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
   </ul>
 
   <h3>3.4 Example configuration</h3>
-<pre data-lang="sql"><code>-- SQL expression (measure): net revenue
+<pre data-lang="sql" data-tested="no"><code>-- SQL expression (measure): net revenue
 SUM(order_total) - SUM(returns_total)
 
 -- Parameterised example SQL, with the phrasing it answers in a comment
@@ -485,7 +485,7 @@ WHERE region = :region AND order_quarter = :quarter;</code></pre>
 
   <h3>4.2 Run and read results</h3>
   <p>Run the suite after every significant change to instructions or data, and track the score over time. The benchmark evaluation commands are in Beta and may change.</p>
-<pre data-lang="bash"><code># Start a benchmark run, then read it back (Beta commands)
+<pre data-lang="bash" data-tested="no"><code># Start a benchmark run, then read it back (Beta commands)
 databricks genie genie-create-eval-run {{spc:01ef0000000000000000000000000000}} --profile &lt;profile&gt;
 databricks genie genie-get-eval-run {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;
 databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;</code></pre>
@@ -558,7 +558,7 @@ databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}
     <li><strong>Several workspaces or regions:</strong> either add users to each workspace that holds content they need, or create a dedicated consumer workspace and publish the Agents and dashboards to it with bundles or the Agents API.</li>
   </ul>
   <p>Business users need SELECT on the Unity Catalog objects the Agents use, granted through groups. Share each Agent with the group at CAN RUN. Sharing options include workspace folder inheritance, specific users or groups, all account users, a link for privileged users, and individual conversations. <!-- C-13 --> A custom account URL, where available, lets users sign in once and move across workspaces; this is field guidance.</p>
-<pre data-lang="bash"><code># Smoke-test an Agent from the CLI as the signed-in user
+<pre data-lang="bash" data-tested="no"><code># Smoke-test an Agent from the CLI as the signed-in user
 databricks genie start-conversation {{spc:01ef0000000000000000000000000000}} "What was revenue last quarter?" --profile &lt;profile&gt;
 
 # Ask a data question without targeting one Agent
@@ -589,7 +589,7 @@ databricks genie ask "What tables exist?" --profile &lt;profile&gt;</code></pre>
 
   <h3>6.2 Audit logs and system tables</h3>
   <p>Genie events land in <code>system.access.audit</code> with <code>service_name = 'aibiGenie'</code>. <!-- C-16 --></p>
-<pre data-lang="sql"><code>-- Daily Genie message volume and distinct users, last 30 days
+<pre data-lang="sql" data-tested="no"><code>-- Daily Genie message volume and distinct users, last 30 days
 SELECT event_date,
        COUNT(*) AS messages,
        COUNT(DISTINCT user_identity.email) AS users
@@ -600,7 +600,7 @@ WHERE service_name = 'aibiGenie'
 GROUP BY event_date
 ORDER BY event_date;</code></pre>
   <p>The SQL that Genie generated is in <code>system.query.history</code>. Filtering on <code>query_source.genie_space_id</code> is field guidance; confirm the column on your workspace. <!-- C-17 --></p>
-<pre data-lang="sql"><code>SELECT executed_by, start_time, total_duration_ms, execution_status, statement_text
+<pre data-lang="sql" data-tested="no"><code>SELECT executed_by, start_time, total_duration_ms, execution_status, statement_text
 FROM system.query.history
 WHERE query_source.genie_space_id = '{{spc:01ef0000000000000000000000000000}}'
 ORDER BY start_time DESC
@@ -701,10 +701,10 @@ LIMIT 100;</code></pre>
 
   <h3>7.4 Promote between environments</h3>
   <p>Keep separate catalogs for dev, staging and production data, and re-run benchmarks before every promotion. The Agent configuration travels as a serialized export:</p>
-<pre data-lang="bash"><code># Export the source Agent, including its serialized configuration
+<pre data-lang="bash" data-tested="no"><code># Export the source Agent, including its serialized configuration
 databricks genie get-space {{spc:01ef0000000000000000000000000000}} --include-serialized-space -o json --profile &lt;dev-profile&gt; &gt; genie_spaces/sales_analytics.json</code></pre>
   <p>Edit the file for the target (catalog and schema names, and a warehouse that exists in the target workspace), commit it to Git as the audit record, then deploy. Declarative Automation Bundles manage Agents natively through the <code>genie_spaces</code> resource, which needs the direct deployment engine and CLI 1.3.0 or later. <!-- C-08 --></p>
-<pre data-lang="yaml"><code>bundle:
+<pre data-lang="yaml" data-tested="no"><code>bundle:
   name: genie-agents
   engine: direct
 
@@ -723,7 +723,7 @@ targets:
   prod:
     workspace:
       host: https://&lt;prod-workspace&gt;.cloud.databricks.com</code></pre>
-<pre data-lang="bash"><code>databricks bundle validate -t prod --profile &lt;prod-profile&gt;
+<pre data-lang="bash" data-tested="no"><code>databricks bundle validate -t prod --profile &lt;prod-profile&gt;
 databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
   <p>Run the export and the deployment as service principals with the least access needed: CAN EDIT on the source Agent, and on the target CAN USE on the warehouse and CAN MANAGE on the parent folder. Without bundles, <code>databricks genie create-space</code> and <code>update-space</code> take the same serialized payload.</p>
   <div class="table-wrap">
@@ -821,7 +821,7 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
     <li>Personal instructions live in <code>.assistant_instructions.md</code> in the user&rsquo;s folder. Workspace-wide instructions live in <code>.assistant_workspace_instructions.md</code>, are set by workspace administrators and take precedence. Each file is limited to 20,000 characters, and <code>AGENTS.md</code> and <code>CLAUDE.md</code> files are picked up automatically. <!-- C-29 --></li>
     <li>Skills are folders with a <code>SKILL.md</code> file (name and description frontmatter) in <code>Workspace/.assistant/skills/</code> or the user&rsquo;s <code>.assistant/skills/</code>. Genie Code loads them when relevant or when mentioned with @. <!-- C-30 --></li>
   </ul>
-<pre data-lang="md"><code># Genie Agent authoring conventions
+<pre data-lang="md" data-tested="no"><code># Genie Agent authoring conventions
 - Write table and column comments in plain business language, one sentence each.
 - Name the grain of every fact table in its comment.
 - Never use SELECT * in example SQL; list the columns.

@@ -355,6 +355,22 @@ def pdf_checks(browser, base):
         check(f"{name} is not older than its source sections", m.get("sha256") == hashes.get(m.get("source")), (m.get("sha256"), hashes.get(m.get("source"))))
 
 
+def tested_checks(browser, base):
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    total = pg.locator("pre[data-lang]").count()
+    flagged = pg.locator("pre[data-lang][data-tested]").count()
+    check("every code block declares its test status", total > 0 and total == flagged, (total, flagged))
+    check("untested blocks show a visible label", pg.evaluate("[...document.querySelectorAll('pre[data-tested=no]')].every(p=>getComputedStyle(p,'::before').content.includes('Not run'))"))
+    check("the hero explains the test status", "have not been run" in pg.inner_text(".hero").lower())
+    pg.locator("pre[data-lang]").first.scroll_into_view_if_needed()
+    pg.locator("pre .copy").first.click()
+    clip = pg.evaluate("navigator.clipboard.readText()")
+    check("copied code does not include the status label", "Not run" not in clip and "Copy" not in clip, clip[:80])
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -377,7 +393,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks, pdf_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks, pdf_checks, tested_checks]
 
 if __name__ == "__main__":
     sys.exit(run())

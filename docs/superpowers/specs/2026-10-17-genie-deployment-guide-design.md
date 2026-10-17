@@ -73,10 +73,10 @@ Design rules from the UC guide: no side-stripes, gates as checkboxes, WCAG AA, a
 
 ## 7. Content rules
 
-- Source: nine internal Drive docs. The Enterprise Deployment Guide is the backbone; the two-week development guide feeds step 03; the field guide feeds step 01; the onboarding and rollout templates feed steps 04 and 07; the account-level onboarding guide feeds step 05; the bundles migration doc feeds step 07; the genie-ready and index docs are cross-checks.
+- Source: nine internal source documents (not published). The Enterprise Deployment Guide is the backbone; the two-week development guide feeds step 03; the field guide feeds step 01; the onboarding and rollout templates feed steps 04 and 07; the account-level onboarding guide feeds step 05; the bundles migration doc feeds step 07; the genie-ready and index docs are cross-checks.
 - Strip: `go/` links, named people, internal Slack channels, Salesforce and internal-process references, customer names, internal doc links.
 - Label every number as Databricks-published (for example 20 questions per minute in the UI, 5 on the API free tier, 30-table limit, 500 benchmarks per space, 80% accuracy guidance) or field-recommended (cadences, wave sizes, adoption targets). Published values are re-checked against current docs before publishing.
-- Genie Code content comes from public documentation only, as the Drive sources do not cover it.
+- Genie Code content comes from public documentation only, as the source documents do not cover it.
 - Claims register `docs/claims.md`: one row per volatile fact with source, status (verified, unverified, conflicting) and date. Unverifiable facts are flagged in the text, not asserted. Known conflicts to resolve first: native bundle support for Agents (one source says GA from July 2026, another says in development); Space to Agent rename scope; Databricks One to Genie One naming; whether the Share-to-Account-Users preview is still current.
 - Commands (CLI, SQL, API) are tested on a workspace the user names. No profile is auto-selected. Untested commands are marked as untested.
 
