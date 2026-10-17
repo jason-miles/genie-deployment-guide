@@ -9,7 +9,7 @@
 **Tech Stack:** HTML, CSS, vanilla JS (no build, no external requests), Python 3 Playwright (`python3 -I`), axe-core via `npm pack`, Apache 2.4 for `.htaccess` testing.
 
 **Spec:** `docs/superpowers/specs/2026-10-17-genie-deployment-guide-design.md`
-**Template repo (read-only reference):** `the sibling UC migration guide repo` (files `index.html`, `assets/css/style.css`, `assets/js/app.js`, `.htaccess`, `.databricks-impeccable.md`). Old harness: `a local script`, the axe and contrast scripts (may be gone; recreate from the descriptions in Task 1 if missing).
+**Template repo (read-only reference):** the sibling UC migration guide repo `jason-miles/UC-Migrations-Best-Practice-Guide` (files `index.html`, `assets/css/style.css`, `assets/js/app.js`, `.htaccess`, `.databricks-impeccable.md`). The old harness was a local Playwright script; recreate it from the descriptions in Task 1.
 
 ## Global Constraints
 
@@ -117,7 +117,7 @@
 - [ ] **Step 1: Write failing `step_checks(1)` and `step_checks(2)`**: each section has a "Last verified" date, one gate, at least one copyable code block with Copy button, every `C-nn` cited exists in `docs/claims.md`, and step 2 contains the three credential-model rows and the three compliance tiers.
 - [ ] **Step 2: Run** → FAIL.
 - [ ] **Step 3: Write step 01** from the field guide and Enterprise Pillar 1: topic ranking, good and bad topics, 20 to 50 questions, owner and RACI, success metrics; gate text from the lifecycle P0 exit criteria. **Write step 02** from Pillars 2 and 3: layer guidance (Silver/Gold), per-table must/should/good lists, Metric Views and Ontology, quality-gate table, UC grants SQL using env tokens (`GRANT SELECT ON ...`), row filter and column mask examples, access tiers CAN MANAGE/CAN RUN/CAN VIEW, compliance tiers. Strip per Global Constraints.
-- [ ] **Step 4: Run** → PASS; run the strip scan: `grep -rEi "go/[a-z]|customer|customer|customer|@databricks\.com" index.html docs` returns only the rule text.
+- [ ] **Step 4: Run** → PASS; run the strip scan: `grep -rEi "go/[a-z]|@databricks\.com" index.html docs` returns only the rule text, and the customer-name list (kept outside the repo) finds nothing.
 - [ ] **Step 5: Commit** `feat: add steps 01 and 02`
 
 ### Task 6: Steps 03 and 04 (Build; Benchmark and validate)
@@ -186,4 +186,4 @@
 - [ ] **Step 2: Full gates.** Run `python3 -I tests/guide_test.py`, `tests/axe.py <axe-dir>` (light and dark), `tests/contrast.py`, and the Apache 2.4 local test of `.htaccess` (headers present, CSP does not block the page, `.git` not exposed). All exit 0.
 - [ ] **Step 3: Final strip scan** over the whole repo and the PDFs (`pdftotext` then grep) for customer names, person names, `go/`, Slack channels; zero hits outside rule text.
 - [ ] **Step 4: Write `README.md`** (phases table, features, hosting, link to live Pages URL, licence note), matching the UC README layout.
-- [ ] **Step 5: Commit** `docs: add README and verification results`, then ask the user to run `! git push origin main`. After the push, enable Pages from `main` root with `the repo owner's GitHub token` and confirm the live URL returns 200.
+- [ ] **Step 5: Commit** `docs: add README and verification results`, then ask the user to run `! git push origin main`. After the push, enable Pages from `main` root with the repo owner’s GitHub token and confirm the live URL returns 200.

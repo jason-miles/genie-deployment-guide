@@ -104,10 +104,10 @@
   const envKey = 'genie-env';
   let env = {};
   try { env = JSON.parse(store.getItem(envKey) || '{}'); } catch (e) { env = {}; }
-  const clean = v => v.replace(/[^\w-]/g, '');
+  const clean = v => v.replace(/[^\w\-. :/]/g, '');
   const codes = $$('pre[data-lang] code').map(code => ({ code, lang: code.parentElement.dataset.lang.toLowerCase(), src: code.textContent }));
   const paint = ({ code, lang, src }) => {
-    const text = src.replace(/\{\{(\w+):([^}]*)\}\}/g, (m, k, d) => '\uE000' + (env[k] || d) + '\uE001');
+    const text = src.replace(/\{\{(\w+):([^}]*)\}\}/g, (m, k, d) => '\uE000' + ((env[k] || '').trim() || d) + '\uE001');
     let html = esc(text);
     if (lang === 'sql') html = html.replace(rx.sql, (m, c, st, k) => c ? `<span class="c">${c}</span>` : st ? `<span class="s">${st}</span>` : `<span class="k">${k}</span>`);
     else if (lang === 'bash' || lang === 'sh' || lang === 'shell') html = html.replace(rx.sh, (m, pre, c, st) => c ? `${pre}<span class="c">${c}</span>` : `<span class="s">${st}</span>`);
@@ -133,13 +133,13 @@
   });
 
   // Persisted checklists
-  $$('ul.check.dev input').forEach((box, i) => {
-    const key = 'genie-chk-dev-' + i;
+  $$('ul.check.dev input').forEach(box => {
+    const key = 'genie-chk-' + box.dataset.key;
     box.checked = store.getItem(key) === '1';
     box.addEventListener('change', () => store.setItem(key, box.checked ? '1' : '0'));
   });
-  $$('ul.check:not(.dev) input').forEach((box, i) => {
-    const key = 'genie-chk-' + i;
+  $$('ul.check:not(.dev) input').forEach(box => {
+    const key = 'genie-chk-' + box.dataset.key;
     box.checked = store.getItem(key) === '1';
     box.addEventListener('change', () => {
       store.setItem(key, box.checked ? '1' : '0');
@@ -154,7 +154,7 @@
   }
   tally();
   $('#reset')?.addEventListener('click', () => {
-    $$('ul.check:not(.dev) input').forEach((b, i) => { b.checked = false; store.removeItem('genie-chk-' + i); });
+    $$('ul.check:not(.dev) input').forEach(b => { b.checked = false; store.removeItem('genie-chk-' + b.dataset.key); });
     tally();
   });
 
@@ -186,7 +186,7 @@
   const build = () => {
     idx = $$('main section.step').flatMap(sec => {
       const sname = sec.querySelector('h2').textContent;
-      return $$('h3, p, li, td, summary, .gate, .callout, pre', sec).map(el => ({ el, sname, h: /^H3|SUMMARY$/.test(el.tagName), text: el.innerText.replace(/\s+/g, ' ').replace(/Copy$/, '').trim() }));
+      return $$('h3, p, li, td, summary, .gate, .callout, pre', sec).map(el => ({ el, sname, h: /^H3|SUMMARY$/.test(el.tagName), text: (el.closest('details') ? el.textContent : el.innerText).replace(/\s+/g, ' ').replace(/Copy$/, '').trim() }));
     }).filter(r => r.text.length > 2);
   };
   const render = () => {
@@ -220,6 +220,7 @@
   const go = i => {
     const r = hits[i]; if (!r) return;
     pal.close();
+    const d = r.el.closest('details'); if (d) d.open = true;
     r.el.scrollIntoView({ block: 'center' });
     r.el.classList.add('flash'); setTimeout(() => r.el.classList.remove('flash'), 1800);
   };

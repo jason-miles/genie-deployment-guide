@@ -2,7 +2,7 @@
 
 Date: 2026-10-17
 Repo: `jason-miles/genie-deployment-guide` (public)
-Template: `jason-miles/UC-Migrations-Best-Practice-Guide` (local: `the sibling UC migration guide repo`)
+Template: `jason-miles/UC-Migrations-Best-Practice-Guide`
 
 ## 1. Outcome
 
@@ -98,7 +98,7 @@ Build in vertical slices, each reviewable:
 
 The claims verification (current docs) runs in parallel with repo setup and template copy.
 
-Push uses SSH (`origin` is `git@github.com:jason-miles/...`). The user pushes with `! git push origin main`. Pages API calls use `the repo owner's GitHub token`. Commits end with `Co-authored-by: Isaac <no-reply@databricks.com>`.
+Push uses SSH (`origin` is `git@github.com:jason-miles/...`) and is run by the repo owner. Pages is enabled through the GitHub API with the owner’s token. Commits end with `Co-authored-by: Isaac <no-reply@databricks.com>`.
 
 ## 10. Out of scope
 

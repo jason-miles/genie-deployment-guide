@@ -175,6 +175,7 @@
       <div><label for="v-tbl">Table</label><input id="v-tbl" data-var="tbl" value="orders" autocomplete="off" spellcheck="false"></div>
       <div><label for="v-spc">Agent (space) ID</label><input id="v-spc" data-var="spc" value="01ef0000000000000000000000000000" autocomplete="off" spellcheck="false"></div>
       <div><label for="v-wh">Warehouse ID</label><input id="v-wh" data-var="wh" value="abcdef1234567890" autocomplete="off" spellcheck="false"></div>
+      <div><label for="v-ws">Workspace URL</label><input id="v-ws" data-var="ws" value="https://example.cloud.databricks.com" autocomplete="off" spellcheck="false"></div>
       <div><label for="v-grp">Group</label><input id="v-grp" data-var="grp" value="analysts" autocomplete="off" spellcheck="false"></div>
     </div>
     <button class="btn" id="env-reset" type="button">Reset to defaults</button>
@@ -229,12 +230,12 @@
   <h3>1.4 Collect the questions</h3>
   <p>Ask the business stakeholder, and two or three colleagues, for the 20 to 50 questions the Agent should answer. Several people produce several phrasings of the same question. Then review the list for:</p>
   <ul class="check">
-    <li><label><input type="checkbox"><span>Whether questions assume a calendar year or a fiscal year, and when the fiscal year starts.</span></label></li>
-    <li><label><input type="checkbox"><span>Which metrics and KPIs recur, and the terms used for them.</span></label></li>
-    <li><label><input type="checkbox"><span>Acronyms and company-specific terms, each with a definition.</span></label></li>
-    <li><label><input type="checkbox"><span>Common answer shapes such as top 10 or previous 30 days.</span></label></li>
-    <li><label><input type="checkbox"><span>Questions too complex to answer as written, split into simpler ones, and questions too broad to answer at all.</span></label></li>
-    <li><label><input type="checkbox"><span>Topics that are explicitly out of scope, written into the Agent&rsquo;s instructions. Out-of-scope text guides behaviour; it does not enforce access.</span></label></li>
+    <li><label><input type="checkbox" data-key="whether-questions-assume-a-calendar"><span>Whether questions assume a calendar year or a fiscal year, and when the fiscal year starts.</span></label></li>
+    <li><label><input type="checkbox" data-key="which-metrics-and-kpis-recur"><span>Which metrics and KPIs recur, and the terms used for them.</span></label></li>
+    <li><label><input type="checkbox" data-key="acronyms-and-company-specific-terms"><span>Acronyms and company-specific terms, each with a definition.</span></label></li>
+    <li><label><input type="checkbox" data-key="common-answer-shapes-such-as"><span>Common answer shapes such as top 10 or previous 30 days.</span></label></li>
+    <li><label><input type="checkbox" data-key="questions-too-complex-to-answer"><span>Questions too complex to answer as written, split into simpler ones, and questions too broad to answer at all.</span></label></li>
+    <li><label><input type="checkbox" data-key="topics-that-are-explicitly-out"><span>Topics that are explicitly out of scope, written into the Agent&rsquo;s instructions. Out-of-scope text guides behaviour; it does not enforce access.</span></label></li>
   </ul>
 
   <h3>1.5 Check the data model against the questions</h3>
@@ -290,9 +291,9 @@ WHERE table_schema = '{{sch:sales}}' AND (comment IS NULL OR comment = '');</cod
 <h3>2.2 Prepare each table in Unity Catalog</h3>
   <p><strong>Must have</strong></p>
   <ul class="check">
-    <li><label><input type="checkbox"><span>The table is registered in Unity Catalog with a comment explaining its contents and business context.</span></label></li>
-    <li><label><input type="checkbox"><span>Every column has a business description and a self-explanatory name (<code>customer_lifetime_value</code>, not <code>clv</code>).</span></label></li>
-    <li><label><input type="checkbox"><span>Dates are stored as DATE or TIMESTAMP, not strings.</span></label></li>
+    <li><label><input type="checkbox" data-key="the-table-is-registered-in"><span>The table is registered in Unity Catalog with a comment explaining its contents and business context.</span></label></li>
+    <li><label><input type="checkbox" data-key="every-column-has-a-business"><span>Every column has a business description and a self-explanatory name (<code>customer_lifetime_value</code>, not <code>clv</code>).</span></label></li>
+    <li><label><input type="checkbox" data-key="dates-are-stored-as-date"><span>Dates are stored as DATE or TIMESTAMP, not strings.</span></label></li>
   </ul>
   <p><strong>Should have</strong>: primary and foreign keys, and governance tags for PII and sensitivity. <strong>Good to have</strong>: <code>OPTIMIZE</code> unless predictive optimisation is on, and a documented freshness cadence.</p>
 <pre data-lang="sql" data-tested="no"><code>COMMENT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
@@ -490,17 +491,16 @@ databricks genie genie-create-eval-run {{spc:01ef0000000000000000000000000000}} 
 databricks genie genie-get-eval-run {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;
 databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;</code></pre>
   <div class="callout note"><strong>The 80% gate</strong>Field guidance is to hold an Agent at about 80% benchmark accuracy before promoting it. This number is not in the public documentation, so treat it as a starting point and set the threshold per use case. Below the gate, an Agent is not ready regardless of how it feels in a demo. <!-- C-06 --></div>
-
-  <div data-pdf="onboarding-checklist">
 </div>
-  <h3>4.3 Technical validation</h3>
+  <div data-pdf="onboarding-checklist">
+<h3>4.3 Technical validation</h3>
   <p>The Agent owner and other editors use the Agent themselves for 1 to 2 weeks (field-recommended), adjusting context and re-running benchmarks as new questions arise. Check that:</p>
   <ul class="check">
-    <li><label><input type="checkbox"><span>The Agent uses as few tables as possible, keys are set, and column names and descriptions are clear and in the language users prefer.</span></label></li>
-    <li><label><input type="checkbox"><span>Entity matching covers prompts that differ from stored values.</span></label></li>
-    <li><label><input type="checkbox"><span>Ten or more example SQL queries cover the most common questions, parameterised where possible.</span></label></li>
-    <li><label><input type="checkbox"><span>Measures, filters and dimensions that can be structural are SQL expressions, not prose.</span></label></li>
-    <li><label><input type="checkbox"><span>Benchmarks hold the accuracy target across the validation period.</span></label></li>
+    <li><label><input type="checkbox" data-key="the-agent-uses-as-few"><span>The Agent uses as few tables as possible, keys are set, and column names and descriptions are clear and in the language users prefer.</span></label></li>
+    <li><label><input type="checkbox" data-key="entity-matching-covers-prompts-that"><span>Entity matching covers prompts that differ from stored values.</span></label></li>
+    <li><label><input type="checkbox" data-key="ten-or-more-example-sql"><span>Ten or more example SQL queries cover the most common questions, parameterised where possible.</span></label></li>
+    <li><label><input type="checkbox" data-key="measures-filters-and-dimensions-that"><span>Measures, filters and dimensions that can be structural are SQL expressions, not prose.</span></label></li>
+    <li><label><input type="checkbox" data-key="benchmarks-hold-the-accuracy-target"><span>Benchmarks hold the accuracy target across the validation period.</span></label></li>
   </ul>
 
   <h3>4.4 Business validation</h3>
@@ -515,8 +515,6 @@ databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}
   </table>
   </div>
   <p>Expect to keep reviewing feedback for the life of the Agent. Steps 05 and 06 can run in parallel with business validation.</p>
-
-  
 </div>
   <label class="gate"><input type="checkbox" data-gate="step-4"><span><strong>Gate</strong>Benchmark accuracy meets the agreed target over the validation period and the business power users have signed off.</span></label>
 </section>
@@ -700,9 +698,11 @@ LIMIT 100;</code></pre>
   </ul>
 
   <h3>7.4 Promote between environments</h3>
-  <p>Keep separate catalogs for dev, staging and production data, and re-run benchmarks before every promotion. The Agent configuration travels as a serialized export:</p>
-<pre data-lang="bash" data-tested="no"><code># Export the source Agent, including its serialized configuration
-databricks genie get-space {{spc:01ef0000000000000000000000000000}} --include-serialized-space -o json --profile &lt;dev-profile&gt; &gt; genie_spaces/sales_analytics.json</code></pre>
+  <p>Keep separate catalogs for dev, staging and production data, and re-run benchmarks before every promotion. The Agent travels as a serialized definition in a <code>.geniespace.json</code> file. Generate it, together with the bundle configuration, from the existing Agent:</p>
+<pre data-lang="bash" data-tested="no"><code># Writes the bundle config and the .geniespace.json definition for an existing Agent
+databricks bundle generate genie-space --existing-id {{spc:01ef0000000000000000000000000000}} --key sales_analytics --profile &lt;dev-profile&gt;</code></pre>
+  <p>To export the definition by hand instead, <code>get-space</code> returns the Agent with its definition in the <code>serialized_space</code> field; extract that string, not the whole response:</p>
+<pre data-lang="bash" data-tested="no"><code>databricks genie get-space {{spc:01ef0000000000000000000000000000}} --include-serialized-space -o json --profile &lt;dev-profile&gt; | jq -r .serialized_space &gt; genie_spaces/sales_analytics.geniespace.json</code></pre>
   <p>Edit the file for the target (catalog and schema names, and a warehouse that exists in the target workspace), commit it to Git as the audit record, then deploy. Declarative Automation Bundles manage Agents natively through the <code>genie_spaces</code> resource, which needs the direct deployment engine and CLI 1.3.0 or later. <!-- C-08 --></p>
 <pre data-lang="yaml" data-tested="no"><code>bundle:
   name: genie-agents
@@ -712,20 +712,20 @@ resources:
   genie_spaces:
     sales_analytics:
       title: Sales analytics
-      warehouse_id: {{wh:abcdef1234567890}}
+      warehouse_id: "{{wh:abcdef1234567890}}"
       parent_path: /Workspace/Shared/genie
-      file_path: ./genie_spaces/sales_analytics.json
+      file_path: ./genie_spaces/sales_analytics.geniespace.json
       permissions:
-        - group_name: {{grp:analysts}}
+        - group_name: "{{grp:analysts}}"
           level: CAN_RUN
 
 targets:
   prod:
     workspace:
-      host: https://&lt;prod-workspace&gt;.cloud.databricks.com</code></pre>
+      host: {{ws:https://example.cloud.databricks.com}}</code></pre>
 <pre data-lang="bash" data-tested="no"><code>databricks bundle validate -t prod --profile &lt;prod-profile&gt;
 databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
-  <p>Run the export and the deployment as service principals with the least access needed: CAN EDIT on the source Agent, and on the target CAN USE on the warehouse and CAN MANAGE on the parent folder. Without bundles, <code>databricks genie create-space</code> and <code>update-space</code> take the same serialized payload.</p>
+  <p>Run the export and the deployment as service principals with the least access needed: CAN EDIT on the source Agent, and on the target CAN USE on the warehouse and CAN MANAGE on the parent folder. Without bundles, <code>databricks genie create-space</code> and <code>update-space</code> take the inner <code>serialized_space</code> string, the contents of the <code>.geniespace.json</code> file, as their payload.</p>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Not carried over</th><th>What to do</th></tr></thead>
@@ -838,11 +838,11 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
 
   <h3>Checklist</h3>
   <ul class="check dev">
-    <li><label><input type="checkbox"><span>Partner-powered AI features are enabled at account and workspace level, and the region is supported.</span></label></li>
-    <li><label><input type="checkbox"><span>Security has reviewed what context is sent to the model against the Tier 2 and Tier 3 items.</span></label></li>
-    <li><label><input type="checkbox"><span>A workspace instructions file and a shared skills folder exist and are owned by an administrator.</span></label></li>
-    <li><label><input type="checkbox"><span>A budget or cost control is set by an account administrator.</span></label></li>
-    <li><label><input type="checkbox"><span>Agent authors know that generated descriptions, expressions and benchmark SQL need the same review as hand-written ones.</span></label></li>
+    <li><label><input type="checkbox" data-key="partner-powered-ai-features-are"><span>Partner-powered AI features are enabled at account and workspace level, and the region is supported.</span></label></li>
+    <li><label><input type="checkbox" data-key="security-has-reviewed-what-context"><span>Security has reviewed what context is sent to the model against the Tier 2 and Tier 3 items.</span></label></li>
+    <li><label><input type="checkbox" data-key="a-workspace-instructions-file-and"><span>A workspace instructions file and a shared skills folder exist and are owned by an administrator.</span></label></li>
+    <li><label><input type="checkbox" data-key="a-budget-or-cost-control"><span>A budget or cost control is set by an account administrator.</span></label></li>
+    <li><label><input type="checkbox" data-key="agent-authors-know-that-generated"><span>Agent authors know that generated descriptions, expressions and benchmark SQL need the same review as hand-written ones.</span></label></li>
   </ul>
   </details>
 </section>

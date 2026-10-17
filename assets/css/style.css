@@ -198,9 +198,10 @@ pre {
 }
 pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
 pre[data-lang]::before {
-  content: attr(data-lang); position: absolute; top: 10px; right: 84px; font: 400 .75rem var(--mono);
+  content: attr(data-lang); display: block; white-space: normal; margin-bottom: 6px; padding-right: 84px; font: 400 .75rem var(--mono);
   letter-spacing: .1em; text-transform: uppercase; color: var(--code-dim);
 }
+pre[data-tested="no"]::before { content: attr(data-lang) "  \00B7  Not run against a workspace"; }
 .copy {
   position: absolute; top: 6px; right: 8px; background: var(--code-line); color: #d5e0e6; border: 1px solid #2c5666;
   border-radius: 6px; font: inherit; font-size: .8125rem; min-height: 28px; padding: 2px 12px; cursor: pointer;
@@ -312,7 +313,7 @@ a.next:hover { border-color: var(--ink); }
 @media (pointer: coarse) {
   .btn, .sidebar input[type=search], .chooser select { min-height: 44px; }
   .copy { min-height: 44px; min-width: 44px; top: 4px; }
-  pre[data-lang]::before { right: 96px; top: 16px; }
+  pre[data-lang]::before { padding-right: 96px; }
   .sidebar nav a { min-height: 44px; }
   ul.check label { min-height: 44px; align-items: center; }
   summary { padding: var(--s2) 0; }
@@ -336,6 +337,9 @@ a.next:hover { border-color: var(--ink); }
   .hero { background: none; color: #000; border: 0; }
   .hero p { color: #333; }
   .gate { background: none; color: #000; border-color: #000; }
+  pre mark.v { background: #fff3c4; color: #000; }
+  pre .k { color: #1d3a9c; } pre .s { color: #0b6b4a; } pre .c { color: #555; }
+  pre[data-lang]::before { color: #444; }
 }
 
 /* Resource shelf */
@@ -376,5 +380,3 @@ fieldset.q label { display: block; padding: 4px 0; }
 .pdf-doc tr, .pdf-doc li { break-inside: avoid; }
 .pdf-doc pre { white-space: pre-wrap; break-inside: avoid; }
 
-/* Code blocks not yet run against a workspace */
-pre[data-tested="no"]::before { content: "Not run against a workspace"; display: block; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--code-dim); margin-bottom: 6px; }

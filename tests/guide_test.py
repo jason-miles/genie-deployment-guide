@@ -371,6 +371,105 @@ def tested_checks(browser, base):
     ctx.close()
 
 
+CONTRAST_JS = """(sels) => {
+  const parse = c => { const m = c.match(/[\\d.]+/g).map(Number); return {r:m[0],g:m[1],b:m[2],a:m[3]===undefined?1:m[3]}; };
+  const over = (f,b) => ({r:f.r*f.a+b.r*(1-f.a), g:f.g*f.a+b.g*(1-f.a), b:f.b*f.a+b.b*(1-f.a), a:1});
+  const bgOf = el => { const chain=[]; for(let e=el;e;e=e.parentElement){ const c=parse(getComputedStyle(e).backgroundColor); chain.push(c); if(c.a===1) break; }
+    let bg = chain[chain.length-1].a===1?chain[chain.length-1]:{r:255,g:255,b:255,a:1};
+    for(let i=chain.length-2;i>=0;i--) bg=over(chain[i],bg); return bg; };
+  const lum = c => { const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}; return .2126*f(c.r)+.7152*f(c.g)+.0722*f(c.b); };
+  const out = {};
+  for (const sel of sels) {
+    const el = document.querySelector(sel); if (!el) { out[sel] = null; continue; }
+    const bg = bgOf(el), fg = over(parse(getComputedStyle(el).color), bg);
+    const a = lum(fg), b = lum(bg); out[sel] = +((Math.max(a,b)+.05)/(Math.min(a,b)+.05)).toFixed(2);
+  }
+  const pre = document.querySelector('pre[data-tested=no]');
+  const bg = bgOf(pre), fg = over(parse(getComputedStyle(pre,'::before').color), bg);
+  const a = lum(fg), b = lum(bg); out['label'] = +((Math.max(a,b)+.05)/(Math.min(a,b)+.05)).toFixed(2);
+  return out;
+}"""
+
+
+def review_fix_checks(browser, base):
+    import re
+    import subprocess
+    # Public-repo hygiene over every tracked file and every PDF
+    files = subprocess.check_output(["git", "-C", str(ROOT), "ls-files"], text=True).splitlines()
+    bad = "|".join(["ned" + "bank", "mo" + "mentum", "inves" + "tec", "capi" + "tec", "1e1B" + "Y_", "vibe-coding" + "-repos",
+                    "gh auth" + " token", "Claude's own" + " push", "permission" + "-denied", r"jason\.miles", r"go/(?!no-go)[a-z]"])
+    pat = re.compile(bad, re.I)
+    hits = []
+    for f in files:
+        path = ROOT / f
+        if f.endswith(".pdf"):
+            text = subprocess.run(["pdftotext", str(path), "-"], capture_output=True, text=True).stdout
+        elif f.endswith(".woff2"):
+            continue
+        else:
+            text = path.read_text(errors="ignore")
+        for m in pat.finditer(text):
+            hits.append((f, m.group(0)))
+    check("tracked files and PDFs contain no customer names, internal IDs or local paths", not hits, hits[:5])
+
+    # PDF content
+    def pdf_text(name):
+        return subprocess.run(["pdftotext", str(ROOT / "assets" / "pdf" / name), "-"], capture_output=True, text=True).stdout
+    t = pdf_text("onboarding-checklist.pdf")
+    check("onboarding PDF contains technical and business validation", "Technical validation" in t and "Business validation" in t and len(t) > 1200, len(t))
+    check("benchmark PDF contains the benchmark suite section", "Build the benchmark suite" in pdf_text("benchmark-checklist.pdf"))
+
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+
+    # Print/PDF colours
+    pg.emulate_media(media="print")
+    r = pg.evaluate(CONTRAST_JS, ["pre mark.v", "pre .k", "pre .s", "pre .c"])
+    low = {k: v for k, v in r.items() if v is not None and v < 4.5}
+    check("code colours meet 4.5:1 in print", not low, low)
+    pg.emulate_media(media="screen")
+
+    # Code-block label sits in flow and does not cover code
+    for vp in ({"width": 1400, "height": 900}, {"width": 390, "height": 844}):
+        pg.set_viewport_size(vp)
+        info = pg.evaluate("""()=>{const pre=document.querySelector('pre[data-tested=no]');const cs=getComputedStyle(pre,'::before');
+          return {pos:cs.position,ws:cs.whiteSpace,content:cs.content,lang:pre.dataset.lang,gap:pre.querySelector('code').getBoundingClientRect().top-pre.getBoundingClientRect().top}}""")
+        check(f"code label is in flow at {vp['width']}px", info["pos"] != "absolute" and info["ws"] == "normal" and "Not run" in info["content"] and info["lang"].lower() in info["content"].lower() and info["gap"] >= 28, info)
+    pg.set_viewport_size({"width": 1400, "height": 900})
+
+    # Search reaches the collapsed Developer track and opens it
+    pg.keyboard.press("Control+k")
+    pg.fill("#pal-q", "assistant_workspace_instructions")
+    check("search finds text inside the collapsed Developer track", pg.locator("#pal-list li[role=option]:not(.pal-empty)").count() >= 1)
+    pg.keyboard.press("Enter")
+    check("choosing a track result opens the track", pg.evaluate("document.querySelector('#developer-track details').open"))
+
+    # Environment panel keeps names with spaces and dots; workspace URL variable exists
+    pg.fill("#v-grp", "Data Analysts")
+    check("group names with spaces are preserved", pg.input_value("#v-grp") == "Data Analysts")
+    check("group name with spaces reaches the code", "Data Analysts" in pg.inner_text("pre[data-lang] code mark.v >> nth=-1") or pg.locator("mark.v", has_text="Data Analysts").count() > 0)
+    check("workspace URL variable exists", pg.locator("#v-ws").count() == 1)
+    if pg.locator("#v-ws").count():
+        pg.fill("#v-ws", "https://dev.cloud.databricks.com")
+        check("workspace URL reaches the bundle YAML", "https://dev.cloud.databricks.com" in pg.inner_text("#step-7 pre[data-lang=yaml] code"))
+
+    # Stable checklist keys
+    keys = pg.eval_on_selector_all("ul.check input", "els=>els.map(e=>e.dataset.key||'')")
+    check("every checklist item has a unique data-key", all(keys) and len(set(keys)) == len(keys), keys[:3])
+    if all(keys):
+        pg.locator("ul.check:not(.dev) input").first.check()
+        check("checklist state is stored under its data-key", pg.evaluate("(k)=>localStorage.getItem('genie-chk-'+k)", keys[0]) == "1")
+
+    # Step 07 promotion recipe
+    t7 = pg.inner_text("#step-7")
+    check("step 7 leads with bundle generate genie-space", "bundle generate genie-space" in t7)
+    check("step 7 names the .geniespace.json file", ".geniespace.json" in t7 and "jq -r .serialized_space" in t7)
+    check("step 7 no longer says create-space takes the same payload", "take the same serialized payload" not in t7)
+    check("bundle YAML quotes the warehouse ID", 'warehouse_id: "' in pg.inner_text("#step-7 pre[data-lang=yaml] code"))
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -393,7 +492,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks, pdf_checks, tested_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks, pdf_checks, tested_checks, review_fix_checks]
 
 if __name__ == "__main__":
     sys.exit(run())
