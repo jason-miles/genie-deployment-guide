@@ -194,6 +194,43 @@ def step0_checks(browser, base):
     ctx.close()
 
 
+def step_common(pg, n, html_path):
+    sec = pg.locator(f"#step-{n}")
+    txt = sec.inner_text()
+    check(f"step {n} shows a Last verified date", "Last verified: 17 Oct 2026" in txt)
+    check(f"step {n} has exactly one gate", sec.locator("input[data-gate]").count() == 1)
+    check(f"step {n} has a copyable code block", sec.locator("pre .copy").count() >= 1)
+    return txt
+
+
+def claims_checks(browser, base):
+    import re
+    html = (ROOT / "index.html").read_text()
+    claims = (ROOT / "docs" / "claims.md").read_text()
+    known = set(re.findall(r"^\| (C-\d+) \|", claims, re.M))
+    cited = set(re.findall(r"C-\d+", " ".join(re.findall(r"<!--(.*?)-->", html))))
+    check("every cited claim ID exists in docs/claims.md", cited <= known, sorted(cited - known))
+
+
+def steps12_checks(browser, base):
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    t = step_common(pg, 1, None)
+    for term in ("Business stakeholder", "Technical stakeholder", "20 to 50", "out of scope"):
+        check(f"step 1 covers {term}", term.lower() in t.lower(), term)
+    check("step 1 has a topic-ranking table", pg.locator("#step-1 table#rank").count() == 1)
+    t = step_common(pg, 2, None)
+    for term in ("Silver", "Gold", "50 tables", "Metric View", "ROW FILTER", "MASK", "CAN MANAGE", "CAN EDIT", "CAN RUN", "CAN VIEW"):
+        check(f"step 2 covers {term}", term.lower() in t.lower(), term)
+    cred = pg.locator("#step-2 table#cred-models").inner_text()
+    check("step 2 credential table has three patterns", all(x in cred for x in ("Standalone", "Dashboard companion", "Conversation API")), cred[:100])
+    comp = pg.locator("#step-2").inner_text()
+    check("step 2 has three compliance tiers", all(f"Tier {i}" in comp for i in (1, 2, 3)))
+    check("steps 1-2 raise no errors", not pg.errors, pg.errors)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -216,7 +253,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks]
 
 if __name__ == "__main__":
     sys.exit(run())

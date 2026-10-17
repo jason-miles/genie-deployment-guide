@@ -360,3 +360,4 @@ fieldset.q { border: 1px solid var(--line); border-radius: 10px; padding: 10px 1
 fieldset.q legend { font-weight: 700; padding: 0 6px; }
 fieldset.q label { display: block; padding: 4px 0; }
 #verdict, #cred-out { margin: 0; padding: 10px 14px; background: var(--surface-2); border-radius: 8px; }
+.verified { font-size: .875rem; color: var(--ink-2); margin: 0 0 var(--s3, 1rem); }

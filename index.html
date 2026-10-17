@@ -178,16 +178,199 @@
 <!-- STEP 1 -->
 <section class="step" id="step-1">
   <div class="step-head"><div class="step-no">01</div><h2>Discover &amp; scope</h2></div>
-  <p class="lede">Rank candidate topics, define the questions, and name an owner before any configuration starts.</p>
-  <label class="gate"><input type="checkbox" data-gate="step-1"><span><strong>Gate</strong>Use cases are ranked, 20 to 50 questions are listed, and an owner is named.</span></label>
+  <p class="lede">Rank candidate topics, name two stakeholders, and write down the questions before any configuration starts. Most stalled rollouts trace back to scope, not technology.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Durations and targets in this step are field-recommended starting points, not published limits.</p>
+
+  <h3>1.1 What makes a good first topic</h3>
+  <ul>
+    <li>The data is already registered in Unity Catalog. Delta tables are best but not required. Unregistered data delays the start.</li>
+    <li>A small number of well-documented tables. Start with one to five and prove that related questions are answered correctly before expanding. An Agent accepts up to 50 tables, views or metric views, but accuracy falls as scope grows. <!-- C-04 --></li>
+    <li>Primary and foreign keys are defined and columns have descriptions.</li>
+    <li>The audience is mostly business users. Technical users benefit, but the productivity gain shows most with less technical users.</li>
+    <li>There is a backlog of dashboard and analysis requests for the topic, a large pool of potential users, and the most-used dashboards map to the dataset.</li>
+  </ul>
+  <div class="callout warn"><strong>Poor first topics</strong>Metrics where a wrong answer carries severe risk, such as figures in a board report, belong in a reviewed dashboard or a certified query. Open-ended questions that ask for an explanation instead of a data lookup (&ldquo;why are sales down&rdquo;) need a different design; test them against the Agent before promising them.</div>
+
+  <h3>1.2 Rank the candidates</h3>
+  <p>List several topics and rank them. The first topic suggested is rarely the one most likely to succeed. Score each from 1 to 3 and start with the highest total.</p>
+  <div class="table-wrap">
+  <table id="rank">
+    <thead><tr><th>Criterion</th><th>Question to ask</th><th>3 points when</th></tr></thead>
+    <tbody>
+      <tr><td>Data readiness</td><td>Is the data in Unity Catalog and documented?</td><td>Registered, curated, columns described</td></tr>
+      <tr><td>Business value</td><td>Is there a backlog of requests for this topic?</td><td>A long backlog and a named decision it speeds up</td></tr>
+      <tr><td>Audience</td><td>How many business users would ask questions?</td><td>Dozens or more, across more than one team</td></tr>
+      <tr><td>Stakeholders</td><td>Are a business and a technical stakeholder committed?</td><td>Both named, with time set aside</td></tr>
+      <tr><td>Error tolerance</td><td>What happens if an answer is wrong?</td><td>Answers support exploration, not sign-off</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>1.3 Name two stakeholders</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Stakeholder</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>Business stakeholder</td><td>Represents the end users, preferably someone who is not technical. Defines the questions, the business value and the vocabulary, and promotes the Agent to the user group.</td></tr>
+      <tr><td>Technical stakeholder</td><td>Owns the Agent: sets it up, configures it, monitors it, and judges whether the SQL is correct. Typically a BI developer, data analyst or data modeller.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Having both protects the Agent. If one person leaves, the other keeps it alive. Without a business stakeholder, the technical owner tends to chase perfect accuracy while the business users wait.</p>
+
+  <h3>1.4 Collect the questions</h3>
+  <p>Ask the business stakeholder, and two or three colleagues, for the 20 to 50 questions the Agent should answer. Several people produce several phrasings of the same question. Then review the list for:</p>
+  <ul class="check">
+    <li><label><input type="checkbox"><span>Whether questions assume a calendar year or a fiscal year, and when the fiscal year starts.</span></label></li>
+    <li><label><input type="checkbox"><span>Which metrics and KPIs recur, and the terms used for them.</span></label></li>
+    <li><label><input type="checkbox"><span>Acronyms and company-specific terms, each with a definition.</span></label></li>
+    <li><label><input type="checkbox"><span>Common answer shapes such as top 10 or previous 30 days.</span></label></li>
+    <li><label><input type="checkbox"><span>Questions too complex to answer as written, split into simpler ones, and questions too broad to answer at all.</span></label></li>
+    <li><label><input type="checkbox"><span>Topics that are explicitly out of scope, written into the Agent&rsquo;s instructions. Out-of-scope text guides behaviour; it does not enforce access.</span></label></li>
+  </ul>
+
+  <h3>1.5 Check the data model against the questions</h3>
+  <p>Review the technical stakeholder&rsquo;s data model before building. Look for a few tables joined by defined primary and foreign keys, ideally a star schema with one fact table at one grain. Avoid duplicate or near-identical column names, mixed currencies, categorical columns with hundreds of distinct values used in filters, and calculations done on the fly. Put calculations in derived columns or views. Run the following to see how much documentation exists:</p>
+<pre data-lang="sql"><code>-- Table-level descriptions for the candidate schema
+SELECT table_name, comment
+FROM {{cat:main}}.information_schema.tables
+WHERE table_schema = '{{sch:sales}}';
+
+-- Columns that still have no description
+SELECT table_name, column_name
+FROM {{cat:main}}.information_schema.columns
+WHERE table_schema = '{{sch:sales}}' AND (comment IS NULL OR comment = '');</code></pre>
+
+  <h3>1.6 Agree success metrics</h3>
+  <p>These are field-recommended starting points. Calibrate them to the organisation.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Metric</th><th>3-month target</th><th>6-month target</th></tr></thead>
+    <tbody>
+      <tr><td>Trained Agent authors</td><td>5 to 10</td><td>15 to 25</td></tr>
+      <tr><td>Active business users</td><td>50</td><td>200 or more</td></tr>
+      <tr><td>Agents in production</td><td>3 to 5</td><td>10 to 15</td></tr>
+      <tr><td>Weekly active users</td><td>20</td><td>100 or more</td></tr>
+      <tr><td>Benchmark accuracy</td><td>80% or higher</td><td>85% or higher</td></tr>
+      <tr><td>Positive feedback</td><td>Above 70%</td><td>Above 80%</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <label class="gate"><input type="checkbox" data-gate="step-1"><span><strong>Gate</strong>Topics are ranked, 20 to 50 questions are listed with out-of-scope topics stated, and a business stakeholder and a technical owner are named.</span></label>
 </section>
 
 <!-- STEP 2 -->
 <section class="step" id="step-2">
   <div class="step-head"><div class="step-no">02</div><h2>Data &amp; governance</h2></div>
-  <p class="lede">Make the data trustworthy and the access model explicit before the Agent exists.</p>
-<pre data-lang="sql"><code>GRANT SELECT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} TO `{{grp:analysts}}`;</code></pre>
-  <label class="gate"><input type="checkbox" data-gate="step-2"><span><strong>Gate</strong>Tables are documented in Unity Catalog and the credential model is recorded.</span></label>
+  <p class="lede">Make the data trustworthy and the access model explicit before the Agent exists. Genie turns a question into SQL from table and column metadata, so poor metadata produces poor SQL.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Items marked field guidance were not found in public documentation; confirm them with the account team.</p>
+
+  <h3>2.1 Use curated tables</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Layer</th><th>Use for an Agent?</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Raw / Bronze</td><td>Avoid</td><td>Quality problems, cryptic column names and incomplete records make answers unreliable.</td></tr>
+      <tr><td>Cleaned / Silver</td><td>Use</td><td>Validated, standardised, consistent types.</td></tr>
+      <tr><td>Aggregated / Gold</td><td>Prefer</td><td>Clearer business logic and pre-calculated metrics.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>2.2 Prepare each table in Unity Catalog</h3>
+  <p><strong>Must have</strong></p>
+  <ul class="check">
+    <li><label><input type="checkbox"><span>The table is registered in Unity Catalog with a comment explaining its contents and business context.</span></label></li>
+    <li><label><input type="checkbox"><span>Every column has a business description and a self-explanatory name (<code>customer_lifetime_value</code>, not <code>clv</code>).</span></label></li>
+    <li><label><input type="checkbox"><span>Dates are stored as DATE or TIMESTAMP, not strings.</span></label></li>
+  </ul>
+  <p><strong>Should have</strong>: primary and foreign keys, and governance tags for PII and sensitivity. <strong>Good to have</strong>: <code>OPTIMIZE</code> unless predictive optimisation is on, and a documented freshness cadence.</p>
+<pre data-lang="sql"><code>COMMENT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
+  IS 'One row per customer order. Refreshed daily.';
+
+ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
+  ALTER COLUMN order_total COMMENT 'Order value in USD including tax';
+
+-- Keys are informational in Unity Catalog; they tell Genie how tables join
+ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} ALTER COLUMN order_id SET NOT NULL;
+ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} ADD CONSTRAINT orders_pk PRIMARY KEY (order_id);</code></pre>
+  <p>Put metadata on table and column descriptions first. Only the relevant subset is sent with each prompt, which leaves more context for the question. Avoid repeating column semantics in general instructions.</p>
+
+  <h3>2.3 Metric Views and the Ontology</h3>
+  <p>A Metric View defines a KPI once in Unity Catalog and applies it wherever the view is queried, so Genie uses the approved definition instead of rebuilding the formula. Prefer Metric Views over Agent-level SQL expressions when a KPI is shared across Agents. An Agent accepts up to 50 tables, views or metric views; start with five or fewer, and use Metric Views or views to pre-join detail instead of adding tables. <!-- C-04 --> Genie Ontology adds a semantic layer of business terms, metrics and relationships, governed through metric views, Pages and Domains. <!-- C-18 --> It is described in a Databricks blog post and is not yet covered in the Agents documentation, so treat its behaviour as subject to change.</p>
+
+  <h3>2.4 Quality gates before a table joins a production Agent</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Gate</th><th>Check</th><th>Target</th></tr></thead>
+    <tbody>
+      <tr><td>Completeness</td><td>Nulls in critical columns</td><td>Team-defined threshold, for example under 5%</td></tr>
+      <tr><td>Freshness</td><td>Refresh runs on schedule</td><td>Documented cadence met</td></tr>
+      <tr><td>Accuracy</td><td>Metrics match trusted reports</td><td>Benchmark queries match agreed outputs</td></tr>
+      <tr><td>Schema stability</td><td>No unplanned breaking changes</td><td>Change process in place</td></tr>
+      <tr><td>Performance</td><td>Response times are acceptable</td><td>Tables optimised for the expected workload</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>2.5 Know who runs the query</h3>
+  <p>Genie generates read-only SQL and runs it on a SQL warehouse (pro or serverless; serverless is recommended). <!-- C-13 --> The identity depends on the pattern. Unity Catalog, not the Agent, is the data boundary.</p>
+  <div class="table-wrap">
+  <table id="cred-models">
+    <thead><tr><th>Pattern</th><th>Who runs the query</th><th>End-user requirements</th><th>Implication</th></tr></thead>
+    <tbody>
+      <tr><td>Standalone Agent</td><td>Compute credentials are embedded by the author who configured the warehouse. Data access is evaluated as the querying user.</td><td>Consumer access or a Databricks SQL entitlement, plus SELECT on the underlying objects</td><td>Row filters and column masks apply per user</td></tr>
+      <tr><td>Dashboard companion</td><td>Depends on the dashboard sharing model: embedded credentials with shared data permission, otherwise viewer credentials</td><td>Access to the published dashboard</td><td>Genie can answer from the full dataset behind a chart. Include only the fields and rows viewers may reach</td></tr>
+      <tr><td>Conversation API</td><td>The service principal or user behind the OAuth token <!-- C-09 --></td><td>The token identity&rsquo;s Unity Catalog grants</td><td>Use a minimum-privilege identity and document the access model</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>2.6 Grant access with Unity Catalog</h3>
+<pre data-lang="sql"><code>GRANT USE CATALOG ON CATALOG {{cat:main}} TO `{{grp:analysts}}`;
+GRANT USE SCHEMA ON SCHEMA {{cat:main}}.{{sch:sales}} TO `{{grp:analysts}}`;
+GRANT SELECT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} TO `{{grp:analysts}}`;</code></pre>
+  <p>Row filters and column masks defined in Unity Catalog apply to Genie answers based on the querying user.</p>
+<pre data-lang="sql"><code>CREATE FUNCTION {{cat:main}}.{{sch:sales}}.region_filter(region STRING)
+  RETURN is_account_group_member('global_sales') OR region = 'EMEA';
+ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
+  SET ROW FILTER {{cat:main}}.{{sch:sales}}.region_filter ON (region);
+
+CREATE FUNCTION {{cat:main}}.{{sch:sales}}.mask_email(email STRING)
+  RETURN CASE WHEN is_account_group_member('pii_readers') THEN email ELSE '***' END;
+ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
+  ALTER COLUMN email SET MASK {{cat:main}}.{{sch:sales}}.mask_email;</code></pre>
+  <div class="callout warn"><strong>Hiding is not access control</strong>Hiding a column in the Knowledge Store changes what Genie considers. It does not stop a user who has SELECT from querying the column elsewhere. Use grants, filters and masks.</div>
+
+  <h3>2.7 Set Agent permissions</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Role</th><th>Agent permission</th><th>Data access</th></tr></thead>
+    <tbody>
+      <tr><td>Owner or curator</td><td>CAN MANAGE: full control of the Agent, including permissions</td><td>Full access to the Agent&rsquo;s tables</td></tr>
+      <tr><td>Co-author</td><td>CAN EDIT: edit the Agent&rsquo;s configuration</td><td>Governed by Unity Catalog</td></tr>
+      <tr><td>Business user, tester</td><td>CAN RUN: ask questions and run queries</td><td>Governed by Unity Catalog grants, row filters and column masks</td></tr>
+      <tr><td>Viewer</td><td>CAN VIEW: read-only</td><td>No query execution</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The four permission levels come from the Agents documentation. <!-- C-12 --> Grant to groups, not individuals, so access follows identity-provider membership.</p>
+
+  <h3>2.8 Compliance, privacy and data handling</h3>
+  <p>This is an operational checklist for your security and legal teams, not a compliance opinion. Link to the current Databricks trust and safety documentation instead of restating compliance claims in internal documents.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Tier</th><th>Items</th></tr></thead>
+    <tbody>
+      <tr><td>Tier 1: inherited from the platform</td><td>Unity Catalog governance; audit logging; network controls such as IP access lists and Private Link; encryption at rest and in transit; Databricks does not train foundation models on customer prompts, responses or data.</td></tr>
+      <tr><td>Tier 2: depends on your configuration</td><td>The credential model per pattern; dashboard companion data scope; cross-Geo processing for AI features; conversation history storage and retention; what is sent to models (prompts, relevant metadata and values, errors, input queries, not full tables); whether partner-powered AI features are enabled at account and workspace level; customer-managed keys (field guidance; confirm availability for your Agents).</td></tr>
+      <tr><td>Tier 3: needs formal review</td><td>Regulated data such as HIPAA, PCI or FedRAMP; data residency; your AI usage policy; whether result downloads should be restricted (Workspace, Settings, Security, SQL results download); retention and deletion.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <label class="gate"><input type="checkbox" data-gate="step-2"><span><strong>Gate</strong>Tables are documented in Unity Catalog, grants, filters and masks are reviewed by a security reviewer, and the credential pattern and compliance tier items are recorded.</span></label>
 </section>
 
 <!-- STEP 3 -->
