@@ -1,0 +1,18 @@
+{
+  "rollout-plan.pdf": {
+    "source": "rollout-plan",
+    "sha256": "3af97e6783ae7f4558ad261a95512d94aeca45f5a86a0c3694f6eea2c6c29dc2"
+  },
+  "onboarding-checklist.pdf": {
+    "source": "onboarding-checklist",
+    "sha256": "b4fbad83f5b411def9bae6bd67060a5e85053b73d61c37894c58ceb7ed58d624"
+  },
+  "benchmark-checklist.pdf": {
+    "source": "benchmark-checklist",
+    "sha256": "94868d65c783b9679b275f54e7619344b0897796293de57e988006d54cf66443"
+  },
+  "genie-one-agent-code.pdf": {
+    "source": "genie-one-agent-code",
+    "sha256": "d20c9adbfe1c7453760856da278a66aba88aac73238fa1cfb1196b94d9b74504"
+  }
+}

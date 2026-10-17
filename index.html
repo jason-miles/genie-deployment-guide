@@ -79,7 +79,8 @@
   <div class="step-head"><div class="step-no">00</div><h2>Choose your path</h2></div>
   <p class="lede">Genie is a family of three experiences on one governed data foundation. Pick the one that matches the job before planning a rollout. This guide follows the Genie Agent lifecycle; Genie One is the way business users reach Agents, and Genie Code is a separate developer track.</p>
 
-  <h3>0.1 The three products</h3>
+  <div data-pdf="genie-one-agent-code">
+<h3>0.1 The three products</h3>
   <div class="table-wrap">
   <table id="products">
     <thead><tr><th>Product</th><th>What it is</th><th>Who uses it</th><th>Where it appears here</th></tr></thead>
@@ -92,6 +93,8 @@
   </div>
   <p class="hint">All three apply Unity Catalog permissions to what a user can see. The Agent decides which curated experience users get; Unity Catalog decides which data they can reach.</p>
 
+  
+</div>
   <div class="card" id="chooser">
     <h3 class="flush">Which one do you need?</h3>
     <div class="qs">
@@ -111,7 +114,8 @@
     <div id="verdict" role="status" aria-live="polite">Answer the three questions above.</div>
   </div>
 
-  <h3>0.2 Names you will meet</h3>
+  <div data-pdf="genie-one-agent-code">
+<h3>0.2 Names you will meet</h3>
   <p>Product names changed during 2026. Older documents, API paths and bundle resources still use the earlier terms.</p>
   <div class="table-wrap">
   <table id="glossary">
@@ -128,6 +132,8 @@
   </table>
   </div>
 
+  
+</div>
   <h3>0.3 Who runs the query?</h3>
   <p>The identity behind a query decides which controls apply. Check this before choosing a channel.</p>
   <div class="card">
@@ -280,7 +286,8 @@ WHERE table_schema = '{{sch:sales}}' AND (comment IS NULL OR comment = '');</cod
   </table>
   </div>
 
-  <h3>2.2 Prepare each table in Unity Catalog</h3>
+  <div data-pdf="onboarding-checklist">
+<h3>2.2 Prepare each table in Unity Catalog</h3>
   <p><strong>Must have</strong></p>
   <ul class="check">
     <li><label><input type="checkbox"><span>The table is registered in Unity Catalog with a comment explaining its contents and business context.</span></label></li>
@@ -299,6 +306,8 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} ALTER COLUMN order_id SET 
 ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} ADD CONSTRAINT orders_pk PRIMARY KEY (order_id);</code></pre>
   <p>Put metadata on table and column descriptions first. Only the relevant subset is sent with each prompt, which leaves more context for the question. Avoid repeating column semantics in general instructions.</p>
 
+  
+</div>
   <h3>2.3 Metric Views and the Ontology</h3>
   <p>A Metric View defines a KPI once in Unity Catalog and applies it wherever the view is queried, so Genie uses the approved definition instead of rebuilding the formula. Prefer Metric Views over Agent-level SQL expressions when a KPI is shared across Agents. An Agent accepts up to 50 tables, views or metric views; start with five or fewer, and use Metric Views or views to pre-join detail instead of adding tables. <!-- C-04 --> Genie Ontology adds a semantic layer of business terms, metrics and relationships, governed through metric views, Pages and Domains. <!-- C-18 --> It is described in a Databricks blog post and marked Public Preview in the Genie Code documentation, so treat its behaviour as subject to change.</p>
 
@@ -461,7 +470,8 @@ WHERE region = :region AND order_quarter = :quarter;</code></pre>
   <p class="lede">A production Agent is one that has measured accuracy. Benchmark first, let technical users live with the Agent, then bring in business power users.</p>
   <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Durations and the accuracy target are field guidance and are not published limits.</p>
 
-  <h3>4.1 Build the benchmark suite</h3>
+  <div data-pdf="benchmark-checklist">
+<h3>4.1 Build the benchmark suite</h3>
   <p>A benchmark is a question paired with the SQL that answers it correctly. Cover the 15 to 20 questions users are most likely to ask, with two to four phrasings each: roughly 30 to 80 benchmarks. An Agent supports up to 500. <!-- C-05 --> Use the auto-suggested benchmarks to seed the set. Cover these categories:</p>
   <ul>
     <li>Simple aggregations: &ldquo;What is total revenue?&rdquo;</li>
@@ -481,6 +491,8 @@ databricks genie genie-get-eval-run {{spc:01ef0000000000000000000000000000}} &lt
 databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;</code></pre>
   <div class="callout note"><strong>The 80% gate</strong>Field guidance is to hold an Agent at about 80% benchmark accuracy before promoting it. This number is not in the public documentation, so treat it as a starting point and set the threshold per use case. Below the gate, an Agent is not ready regardless of how it feels in a demo. <!-- C-06 --></div>
 
+  <div data-pdf="onboarding-checklist">
+</div>
   <h3>4.3 Technical validation</h3>
   <p>The Agent owner and other editors use the Agent themselves for 1 to 2 weeks (field-recommended), adjusting context and re-running benchmarks as new questions arise. Check that:</p>
   <ul class="check">
@@ -504,6 +516,8 @@ databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}
   </div>
   <p>Expect to keep reviewing feedback for the life of the Agent. Steps 05 and 06 can run in parallel with business validation.</p>
 
+  
+</div>
   <label class="gate"><input type="checkbox" data-gate="step-4"><span><strong>Gate</strong>Benchmark accuracy meets the agreed target over the validation period and the business power users have signed off.</span></label>
 </section>
 
@@ -643,7 +657,8 @@ LIMIT 100;</code></pre>
   <p class="lede">Grow from a pilot to the full audience in waves, and promote the tested configuration between environments instead of rebuilding it by hand.</p>
   <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Wave sizes and timings are field-recommended. The migration sequence follows a published bundle-based pattern; commands are untested here until marked.</p>
 
-  <h3>7.1 Roll out in waves</h3>
+  <div data-pdf="rollout-plan">
+<h3>7.1 Roll out in waves</h3>
   <p>Work backwards from the end state: the number of users, and the peak of concurrent questions in the busiest hour. Advance a wave only when the Agent has not changed, or leave a couple of days after any change.</p>
   <div class="table-wrap">
   <table>
@@ -674,6 +689,8 @@ LIMIT 100;</code></pre>
   </div>
   <p>When close to a limit: increase warehouse size or autoscaling; staff the review queue; and, for API throughput, ask the account team about higher capacity options.</p>
 
+  
+</div>
   <h3>7.3 Roll back</h3>
   <ul>
     <li>Pause onboarding of the next group.</li>
@@ -731,7 +748,8 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
   <div class="step-head"><div class="step-no">+</div><h2>Tracker, risks and first wave</h2></div>
   <p class="verified">Last verified: 17 Oct 2026. Entries are stored in this browser only.</p>
 
-  <h3>Milestone tracker</h3>
+  <div data-pdf="rollout-plan">
+<h3>Milestone tracker</h3>
   <p>One row per phase. Fill it in with the owner, the due date and the status, then download it for the project record.</p>
   <div class="table-wrap"><table id="tracker">
     <thead><tr><th>Milestone</th><th>Owner</th><th>Due date</th><th>Status</th><th>Notes or blockers</th></tr></thead>
@@ -745,6 +763,8 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
   </table></div>
   <p><button class="btn" id="csv" type="button">Download tracker as CSV</button></p>
 
+  
+</div>
   <h3>Key risks and mitigations</h3>
   <div class="table-wrap"><table id="risks">
     <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead>

@@ -1,6 +1,6 @@
 """Playwright harness for the Genie deployment guide.
 
-Run: python3 -I tests/guide_test.py [--allow-missing-pdf]
+Run: python3 -I tests/guide_test.py
 Exit code 0 only if every check passes.
 """
 import functools
@@ -13,7 +13,6 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
-ALLOW_MISSING_PDF = "--allow-missing-pdf" in sys.argv
 results = []
 
 
@@ -118,9 +117,8 @@ def shelf_checks(browser, base):
         no_aria = c.get_attribute("aria-label") is None
         if kind == "pdf":
             check(f"PDF card {i} downloads from assets/pdf", c.get_attribute("download") is not None and href.startswith("assets/pdf/") and no_aria and label.startswith("PDF") and "Downloads a PDF file" in label, (href, label))
-            if not ALLOW_MISSING_PDF:
-                r = ctx.request.get(base + href)
-                check(f"PDF card {i} file exists", r.status == 200 and r.body()[:4] == b"%PDF", r.status)
+            r = ctx.request.get(base + href)
+            check(f"PDF card {i} file exists", r.status == 200 and r.body()[:4] == b"%PDF", r.status)
         else:
             rel = c.get_attribute("rel") or ""
             check(f"blog card {i} opens safely in a new tab", kind == "blog" and href.startswith("https://") and c.get_attribute("target") == "_blank" and "noopener" in rel and "noreferrer" in rel and no_aria and label.startswith("BLOG") and "Opens in a new tab" in label, (href, rel, label))
@@ -335,6 +333,28 @@ def appendix_checks(browser, base):
     ctx.close()
 
 
+def pdf_checks(browser, base):
+    import hashlib, importlib.util, json, re
+    spec = importlib.util.spec_from_file_location("make_pdfs", ROOT / "tools" / "make-pdfs.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    html = (ROOT / "index.html").read_text()
+    hashes = mod.source_hashes(html)
+    manifest_path = ROOT / "assets" / "pdf" / "MANIFEST.json"
+    check("PDF manifest exists", manifest_path.exists())
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    shelf = json.loads(re.search(r'id="shelf-data">(.*?)</script>', html, re.S).group(1))
+    pdfs = [r["href"].split("/")[-1] for r in shelf if r["type"] == "pdf"]
+    check("shelf lists four PDFs", len(pdfs) == 4, pdfs)
+    for name in pdfs:
+        f = ROOT / "assets" / "pdf" / name
+        ok = f.exists() and f.stat().st_size > 5000 and f.read_bytes()[:4] == b"%PDF"
+        check(f"{name} exists, is over 5 KB and is a PDF", ok)
+        m = manifest.get(name, {})
+        check(f"{name} has a manifest entry for a data-pdf source", m.get("source") in hashes, m)
+        check(f"{name} is not older than its source sections", m.get("sha256") == hashes.get(m.get("source")), (m.get("sha256"), hashes.get(m.get("source"))))
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -357,7 +377,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks, pdf_checks]
 
 if __name__ == "__main__":
     sys.exit(run())
