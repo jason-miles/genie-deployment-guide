@@ -359,15 +359,19 @@ def tested_checks(browser, base):
     ctx, pg = new_page(browser)
     pg.goto(base)
     pg.wait_for_load_state("networkidle")
-    total = pg.locator("pre[data-lang]").count()
-    flagged = pg.locator("pre[data-lang][data-tested]").count()
-    check("every code block declares its test status", total > 0 and total == flagged, (total, flagged))
-    check("untested blocks show a visible label", pg.evaluate("[...document.querySelectorAll('pre[data-tested=no]')].every(p=>getComputedStyle(p,'::before').content.includes('Not run'))"))
-    check("the hero explains the test status", "have not been run" in pg.inner_text(".hero").lower())
+    states = pg.eval_on_selector_all("pre[data-lang]", "els=>els.map(e=>[e.dataset.lang,e.dataset.tested||''])")
+    runnable = [t for lang, t in states if lang in ("sql", "bash", "yaml")]
+    check("every SQL, bash and YAML block was run on a workspace", runnable and all(t == "yes" for t in runnable), states)
+    check("example files are marked n/a, not tested", all(t == "n/a" for lang, t in states if lang == "md"), states)
+    check("tested blocks show a visible label with the date", pg.evaluate("[...document.querySelectorAll('pre[data-tested=yes]')].every(p=>{const c=getComputedStyle(p,'::before').content;return c.includes('Run on a test workspace')&&c.includes('17 Oct 2026')})"))
+    check("the hero says the commands were run", "were run" in pg.inner_text(".hero").lower() and "have not been run" not in pg.inner_text(".hero").lower())
     pg.locator("pre[data-lang]").first.scroll_into_view_if_needed()
     pg.locator("pre .copy").first.click()
     clip = pg.evaluate("navigator.clipboard.readText()")
-    check("copied code does not include the status label", "Not run" not in clip and "Copy" not in clip, clip[:80])
+    check("copied code does not include the status label", "Run on a test workspace" not in clip and "Copy" not in clip, clip[:80])
+    t7 = pg.inner_text("#step-7")
+    check("step 7 says update-space uses --serialized-space", "--serialized-space" in t7)
+    check("step 7 no longer says commands are untested", "untested here" not in t7)
     ctx.close()
 
 
@@ -384,7 +388,7 @@ CONTRAST_JS = """(sels) => {
     const bg = bgOf(el), fg = over(parse(getComputedStyle(el).color), bg);
     const a = lum(fg), b = lum(bg); out[sel] = +((Math.max(a,b)+.05)/(Math.min(a,b)+.05)).toFixed(2);
   }
-  const pre = document.querySelector('pre[data-tested=no]');
+  const pre = document.querySelector('pre[data-tested=yes]');
   const bg = bgOf(pre), fg = over(parse(getComputedStyle(pre,'::before').color), bg);
   const a = lum(fg), b = lum(bg); out['label'] = +((Math.max(a,b)+.05)/(Math.min(a,b)+.05)).toFixed(2);
   return out;
@@ -433,9 +437,9 @@ def review_fix_checks(browser, base):
     # Code-block label sits in flow and does not cover code
     for vp in ({"width": 1400, "height": 900}, {"width": 390, "height": 844}):
         pg.set_viewport_size(vp)
-        info = pg.evaluate("""()=>{const pre=document.querySelector('pre[data-tested=no]');const cs=getComputedStyle(pre,'::before');
+        info = pg.evaluate("""()=>{const pre=document.querySelector('pre[data-tested=yes]');const cs=getComputedStyle(pre,'::before');
           return {pos:cs.position,ws:cs.whiteSpace,content:cs.content,lang:pre.dataset.lang,gap:pre.querySelector('code').getBoundingClientRect().top-pre.getBoundingClientRect().top}}""")
-        check(f"code label is in flow at {vp['width']}px", info["pos"] != "absolute" and info["ws"] == "normal" and "Not run" in info["content"] and info["lang"].lower() in info["content"].lower() and info["gap"] >= 28, info)
+        check(f"code label is in flow at {vp['width']}px", info["pos"] != "absolute" and info["ws"] == "normal" and "Run on a test workspace" in info["content"] and info["lang"].lower() in info["content"].lower() and info["gap"] >= 28, info)
     pg.set_viewport_size({"width": 1400, "height": 900})
 
     # Search reaches the collapsed Developer track and opens it

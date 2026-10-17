@@ -11,7 +11,7 @@ Public documentation base: `https://docs.databricks.com/` (checked 17 Oct 2026).
 | C-01 | Genie Agents were formerly Genie Spaces | docs `/genie-agents/` | verified | 2026-10-17 |
 | C-02 | Genie One was previously Databricks One; it is the simplified UI for business users | docs `/genie-one/` | verified | 2026-10-17 |
 | C-03 | Genie Code is the AI coding and data assistant for developers in the workspace; GA | docs `/genie-code/` | verified | 2026-10-17 |
-| C-04 | An Agent supports up to 50 tables, views or metric views; start with five or fewer (was conflicting: internal sources say 30) | docs `/genie-agents/set-up`, `/genie-agents/best-practices` | verified | 2026-10-17 |
+| C-04 | An Agent supports up to 50 tables, views or metric views; start with five or fewer (was conflicting: internal sources and an older reference say 30). Creating Agents with 31 and 50 tables succeeded and 51 was rejected with "A space can have at most 50 tables" | docs `/genie-agents/set-up`, `/genie-agents/best-practices`; live test 17 Oct 2026 | verified | 2026-10-17 |
 | C-05 | Up to 500 benchmark questions per Agent; 2 to 4 phrasings per question | docs `/genie-agents/monitor` | verified | 2026-10-17 |
 | C-06 | 80% benchmark accuracy as the production gate | internal sources only; not in public docs | unverified | 2026-10-17 |
 | C-07 | UI limit 20 questions per minute per workspace; Conversation API free tier 5 per minute | internal sources only; not found in public docs | unverified | 2026-10-17 |
@@ -24,7 +24,7 @@ Public documentation base: `https://docs.databricks.com/` (checked 17 Oct 2026).
 | C-14 | Up to 200,000 conversations per Agent and 10,000 messages per conversation | docs `/genie-agents/set-up`, `/genie-agents/conversation-api` | verified | 2026-10-17 |
 | C-15 | Genie cancels SQL queries running over 5 minutes and messages running over 30 minutes | docs `/genie-agents/troubleshooting` | verified | 2026-10-17 |
 | C-16 | Audit log `service_name` is `aibiGenie`; actions include createSpace, getSpace, updateSpace, createConversation, createConversationMessage | docs audit log reference | verified | 2026-10-17 |
-| C-17 | `system.query.history` identifies Genie queries through `query_source.genie_space_id` | internal sources only | unverified | 2026-10-17 |
+| C-17 | `system.query.history` identifies Genie queries through `query_source.genie_space_id` (4,101 rows in a day on the test workspace) | live query 17 Oct 2026 | verified | 2026-10-17 |
 | C-18 | Genie Ontology is a semantic layer mapping business terms, metrics and relationships, governed through metric views, Pages and Domains; the Genie Code docs mark Genie Ontology as Public Preview | Databricks blog, "How to roll out Genie One", 28 Sep 2026; docs `/genie-code/features-capabilities` | verified | 2026-10-17 |
 | C-19 | Genie One is GA at workspace and account level; Consumer access is the least-privileged entitlement for Genie One chat; account-only experience and Domains are Beta | docs `/genie-one/` | verified | 2026-10-17 |
 | C-20 | Share to Account Users (embedded credentials) was a private preview that the account-level Genie path supersedes | internal sources only | unverified (omitted from guide) | 2026-10-17 |
@@ -43,6 +43,27 @@ Public documentation base: `https://docs.databricks.com/` (checked 17 Oct 2026).
 
 ## Open items for the text
 
-- C-06, C-07, C-17, C-21, C-22, C-28: the guide states these as "from Databricks field guidance; not found in public documentation, confirm with the account team".
+- C-06, C-07, C-21, C-22, C-28: the guide states these as "from Databricks field guidance; not found in public documentation, confirm with the account team".
 - C-20: left out of the guide.
 - Wave sizes (10/50/200), review cadences, adoption targets and phase durations are field-recommended and labelled so; they are not claims about the product.
+
+## Command verification log (17 Oct 2026)
+
+Run on a Databricks test workspace (serverless SQL warehouse, Unity Catalog), using a scratch schema, scratch Agents and a scratch bundle that were all removed afterwards. Existing resources in the workspace were not touched.
+
+| Guide block | Result |
+|---|---|
+| Step 01 documentation queries (`information_schema`) | Ran; listed tables and columns without comments |
+| Step 02 table and column comments, `NOT NULL`, primary key | Ran |
+| Step 02 grants | Ran with a user principal in place of a group, then reverted; syntax is identical for groups |
+| Step 02 row filter and column mask | Ran; the filter returned only EMEA rows and the mask hid emails |
+| Step 03 SQL expression and parameterised example SQL | Ran through the Statement Execution API with named parameters |
+| Step 04 `genie-create-eval-run`, `genie-get-eval-run`, `genie-list-eval-results` | Ran with no request body; the run reached DONE, 2 of 2 correct |
+| Step 05 `genie start-conversation` and `genie ask` | Ran; the conversation completed with correct SQL; `ask` answered through the Genie One chat |
+| Step 06 audit query on `system.access.audit` | Ran; returned daily counts |
+| Step 06 `system.query.history` filter on `query_source.genie_space_id` | Ran; the field exists |
+| Step 07 `bundle generate genie-space` | Ran; wrote `src/<key>.geniespace.json` and `resources/<key>.genie_space.yml` |
+| Step 07 `get-space --include-serialized-space` piped through `jq -r .serialized_space` | Ran; the file holds the inner definition |
+| Step 07 bundle YAML, `bundle validate`, `bundle deploy` | Validated as written; deployed with a user principal in place of the group; the new Agent had its own ID and the full definition; `bundle destroy` removed it |
+| `create-space` with the inner string; `update-space --serialized-space` | Ran |
+| Agent table limit (31, 50 and 51 tables) | 31 and 50 accepted, 51 rejected |

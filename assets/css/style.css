@@ -201,6 +201,7 @@ pre[data-lang]::before {
   content: attr(data-lang); display: block; white-space: normal; margin-bottom: 6px; padding-right: 84px; font: 400 .75rem var(--mono);
   letter-spacing: .1em; text-transform: uppercase; color: var(--code-dim);
 }
+pre[data-tested="yes"]::before { content: attr(data-lang) "  \00B7  Run on a test workspace, 17 Oct 2026"; }
 pre[data-tested="no"]::before { content: attr(data-lang) "  \00B7  Not run against a workspace"; }
 .copy {
   position: absolute; top: 6px; right: 8px; background: var(--code-line); color: #d5e0e6; border: 1px solid #2c5666;
