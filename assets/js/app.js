@@ -235,4 +235,42 @@
   });
   pal.addEventListener('click', e => { if (e.target === pal) pal.close(); });
 
+  // Path chooser: which Genie product fits
+  const LABELS = { '#step-1': 'Step 01', '#step-4': 'Step 04', '#step-5': 'Step 05', '#developer-track': 'the Developer track' };
+  function recommend({ user, need, data }) {
+    let product, target;
+    if (need === 'code') { product = 'code'; target = '#developer-track'; }
+    else if (need === 'curate') { product = 'agent'; target = '#step-1'; }
+    else if (user === 'business') { product = 'one'; target = '#step-5'; }
+    else { product = 'agent'; target = '#step-4'; }
+    let note = '';
+    if (data === 'external') note = 'External data must be reachable from Unity Catalog first. Lakehouse Federation registers external systems as foreign catalogs; views on top keep the Agent focused.';
+    else if (data === 'unstructured') note = 'Agents answer from structured Unity Catalog data. Files and documents need a different approach; see the Databricks documentation on analysing files and volumes.';
+    return { product, target, note };
+  }
+  window.recommend = recommend;
+  const TEXT = {
+    one: '<strong>Genie One</strong> is the front door for these users. Curated Agents sit behind it, so the Agent work in Steps 01 to 04 still comes first. Provision access and choose the channel in ',
+    agent: 'Build a <strong>Genie Agent</strong>. Follow the steps in order; the next one for you is ',
+    code: 'Use <strong>Genie Code</strong>. It is a developer assistant and sits outside the Agent rollout gates. Go to '
+  };
+  const pickPath = () => {
+    const a = {};
+    for (const k of ['user', 'need', 'data']) a[k] = $(`input[name=q-${k}]:checked`)?.value;
+    const out = $('#verdict');
+    if (!a.user || !a.need || !a.data) { out.textContent = 'Answer the three questions above.'; return; }
+    const r = recommend(a);
+    out.innerHTML = TEXT[r.product] + `<a href="${r.target}">${LABELS[r.target]}</a>.` + (r.note ? ` <span class="hint">${r.note}</span>` : '');
+  };
+  $$('#chooser input[type=radio]').forEach(i => i.addEventListener('change', pickPath));
+
+  // Credential pattern
+  const CRED = {
+    standalone: 'Compute runs on the SQL warehouse credentials embedded by the Agent author. Data access is checked against each user\u2019s own Unity Catalog identity, so row filters and column masks apply per user. Users need Consumer access (or a Databricks SQL entitlement) and SELECT on the underlying objects.',
+    dashboard: 'The sharing model of the dashboard decides. With shared data permission the companion Agent uses the publisher\u2019s embedded credentials; otherwise viewer credentials apply. Genie can answer from the full dataset behind a chart, including fields the chart does not display, so only include fields and rows you intend viewers to reach.',
+    api: 'Authenticate with OAuth: user OAuth (U2M) where a browser flow exists, or service principal OAuth (M2M) for unattended apps. The query runs as that identity, so use the minimum-privilege identity for the use case and document its Unity Catalog grants.'
+  };
+  const showCred = () => { $('#cred-out').textContent = CRED[$('#cred').value]; };
+  $('#cred').addEventListener('change', showCred);
+  showCred();
 })();

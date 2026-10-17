@@ -75,7 +75,88 @@
 <!-- STEP 0 -->
 <section class="step" id="step-0">
   <div class="step-head"><div class="step-no">00</div><h2>Choose your path</h2></div>
-  <p class="lede">Genie is a family of three experiences on one governed data foundation. Pick the one that matches the job before planning a rollout.</p>
+  <p class="lede">Genie is a family of three experiences on one governed data foundation. Pick the one that matches the job before planning a rollout. This guide follows the Genie Agent lifecycle; Genie One is the way business users reach Agents, and Genie Code is a separate developer track.</p>
+
+  <h3>0.1 The three products</h3>
+  <div class="table-wrap">
+  <table id="products">
+    <thead><tr><th>Product</th><th>What it is</th><th>Who uses it</th><th>Where it appears here</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Genie One</strong></td><td>The simplified Databricks UI for business users: chat with governed data, dashboards and apps in one place. Available at workspace level and account level. <!-- C-02 C-19 --></td><td>Business users and analysts</td><td>Steps 05 and 07, as the access and rollout channel</td></tr>
+      <tr><td><strong>Genie Agent</strong><br>(formerly Genie Space)</td><td>A domain-specific agent. Data analysts configure tables, metric views, SQL expressions, example SQL and instructions so users can ask questions in plain language. <!-- C-01 --></td><td>Agent authors, data teams, then business users</td><td>Steps 01 to 07 (the spine of this guide)</td></tr>
+      <tr><td><strong>Genie Code</strong></td><td>The AI coding and data assistant for developers inside the workspace: notebooks, SQL editor, pipelines editor and dashboards. It works within the user's Unity Catalog permissions. <!-- C-03 C-26 --></td><td>Developers and technical practitioners</td><td><a href="#developer-track">Developer track</a>, outside the step gates</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="hint">All three apply Unity Catalog permissions to what a user can see. The Agent decides which curated experience users get; Unity Catalog decides which data they can reach.</p>
+
+  <div class="card" id="chooser">
+    <h3 class="flush">Which one do you need?</h3>
+    <div class="qs">
+      <fieldset class="q"><legend>Who is the user?</legend>
+        <label><input type="radio" name="q-user" value="business"> Business user</label>
+        <label><input type="radio" name="q-user" value="author"> Agent author or analyst</label>
+        <label><input type="radio" name="q-user" value="developer"> Developer</label></fieldset>
+      <fieldset class="q"><legend>What do they need to do?</legend>
+        <label><input type="radio" name="q-need" value="ask"> Ask questions of data</label>
+        <label><input type="radio" name="q-need" value="curate"> Build a trusted, curated data experience</label>
+        <label><input type="radio" name="q-need" value="code"> Write or debug code</label></fieldset>
+      <fieldset class="q"><legend>Where is the data?</legend>
+        <label><input type="radio" name="q-data" value="uc"> In Unity Catalog tables</label>
+        <label><input type="radio" name="q-data" value="external"> In an external system</label>
+        <label><input type="radio" name="q-data" value="unstructured"> In files or documents</label></fieldset>
+    </div>
+    <div id="verdict" role="status" aria-live="polite">Answer the three questions above.</div>
+  </div>
+
+  <h3>0.2 Names you will meet</h3>
+  <p>Product names changed during 2026. Older documents, API paths and bundle resources still use the earlier terms.</p>
+  <div class="table-wrap">
+  <table id="glossary">
+    <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Genie Agent</td><td>Formerly <strong>Genie Spaces</strong>. API paths still read <code>/api/2.0/genie/spaces</code> and the bundle resource is <code>genie_spaces</code>. <!-- C-01 C-08 --></td></tr>
+      <tr><td>Genie One</td><td>Formerly <strong>Databricks One</strong>. <!-- C-02 --></td></tr>
+      <tr><td>Genie chat</td><td>Formerly <strong>One Chat</strong>, the chat surface inside Genie One. Per Databricks field guidance; not confirmed in public documentation. <!-- C-28 --></td></tr>
+      <tr><td>Genie Ontology</td><td>A semantic layer that maps business terms, metrics and relationships, governed through metric views, Pages and Domains. Described in a Databricks blog post; the Agents documentation does not yet cover it. <!-- C-18 --></td></tr>
+      <tr><td>Knowledge Store</td><td>The Agent-scoped set of curated definitions: descriptions, synonyms, join relationships, SQL expressions and prompt matching. It does not change Unity Catalog metadata. <!-- C-27 --></td></tr>
+      <tr><td>Consumer access</td><td>The least-privileged workspace entitlement that is enough for Genie One chat. <!-- C-19 --></td></tr>
+      <tr><td>Benchmark</td><td>A saved question with its expected SQL, used to measure Agent accuracy.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>0.3 Who runs the query?</h3>
+  <p>The identity behind a query decides which controls apply. Check this before choosing a channel.</p>
+  <div class="card">
+    <div class="chooser">
+      <div><label for="cred">How do users reach the Agent?</label>
+        <select id="cred"><option value="standalone">Standalone Agent (Genie UI or Genie One)</option><option value="dashboard">Dashboard companion</option><option value="api">Conversation API or embedded app</option></select></div>
+    </div>
+    <p id="cred-out" role="status" aria-live="polite"></p>
+  </div>
+
+  <h3>0.4 Roles</h3>
+  <div class="table-wrap">
+  <table id="roles">
+    <thead><tr><th>Role</th><th>Responsibility</th><th>Typically held by</th></tr></thead>
+    <tbody>
+      <tr><td>Agent owner</td><td>Overall accuracy, instruction curation and ongoing refinement</td><td>A senior analyst or data product owner</td></tr>
+      <tr><td>Data steward</td><td>Table quality, metadata accuracy and data freshness</td><td>The data engineering team</td></tr>
+      <tr><td>Security reviewer</td><td>Permissions audit and row-level security verification</td><td>The security or governance team</td></tr>
+      <tr><td>Feedback reviewer</td><td>Reads user questions and finds places to improve</td><td>The Agent owner or a designated analyst</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>0.5 Deployment controls</h3>
+  <ul>
+    <li><strong>Unity Catalog is the security boundary.</strong> An Agent defines the experience; grants, row filters and column masks define what a user can query.</li>
+    <li><strong>One domain per Agent.</strong> Narrow Agents answer more accurately than broad ones. Split when scope grows.</li>
+    <li><strong>An owner for every Agent.</strong> Agents without an owner lose accuracy as terms and data change.</li>
+    <li><strong>A benchmark gate before production.</strong> See Step 04.</li>
+    <li><strong>Channels after quality.</strong> Add Teams, Slack or custom apps only once the Agent is production-quality.</li>
+  </ul>
 
   <div class="card" id="env">
     <h3 class="flush">Your environment</h3>
@@ -91,9 +172,7 @@
     <button class="btn" id="env-reset" type="button">Reset to defaults</button>
   </div>
 
-  <div class="gates">
-  <label class="gate"><input type="checkbox" data-gate="step-0"><span><strong>Gate</strong>The product, the audience and the owner are named for this rollout.</span></label>
-  </div>
+  <label class="gate"><input type="checkbox" data-gate="step-0"><span><strong>Gate</strong>The product, the audience and the Agent owner are named for this rollout, and the credential pattern is recorded.</span></label>
 </section>
 
 <!-- STEP 1 -->

@@ -353,3 +353,10 @@ a.next:hover { border-color: var(--ink); }
 @media print { .shelf { display: none; } }
 .res-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .res-card { position: relative; }
+
+/* Path chooser questions */
+.qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s3, 1rem); margin-bottom: var(--s3, 1rem); }
+fieldset.q { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 0; }
+fieldset.q legend { font-weight: 700; padding: 0 6px; }
+fieldset.q label { display: block; padding: 4px 0; }
+#verdict, #cred-out { margin: 0; padding: 10px 14px; background: var(--surface-2); border-radius: 8px; }

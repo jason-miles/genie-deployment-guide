@@ -152,6 +152,48 @@ def shelf_checks(browser, base):
     ctx.close()
 
 
+def step0_checks(browser, base):
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    cases = [
+        (dict(user="business", need="ask", data="uc"), "one", "#step-5"),
+        (dict(user="author", need="curate", data="uc"), "agent", "#step-1"),
+        (dict(user="developer", need="code", data="uc"), "code", "#developer-track"),
+        (dict(user="author", need="ask", data="uc"), "agent", "#step-4"),
+    ]
+    for a, product, target in cases:
+        r = pg.evaluate("(a)=>window.recommend(a)", a)
+        check(f"recommend {a['user']}/{a['need']} -> {product}", r["product"] == product and r["target"] == target, r)
+    r = pg.evaluate("()=>window.recommend({user:'author',need:'curate',data:'external'})")
+    check("external data adds a federation note", "federation" in r["note"].lower(), r)
+    r = pg.evaluate("()=>window.recommend({user:'author',need:'curate',data:'unstructured'})")
+    check("unstructured data adds a structured-data note", "structured" in r["note"].lower(), r)
+
+    check("verdict prompts before all questions are answered", "three questions" in pg.inner_text("#verdict").lower())
+    pg.check("input[name=q-user][value=business]")
+    pg.check("input[name=q-need][value=ask]")
+    pg.check("input[name=q-data][value=uc]")
+    check("verdict names Genie One for a business user", "Genie One" in pg.inner_text("#verdict"), pg.inner_text("#verdict"))
+    pg.click("#verdict a[href='#step-5']")
+    check("verdict link jumps to step 05", pg.evaluate("location.hash") == "#step-5")
+
+    pg.select_option("#cred", "api")
+    check("credential chooser explains the API pattern", "OAuth" in pg.inner_text("#cred-out"), pg.inner_text("#cred-out"))
+    pg.select_option("#cred", "standalone")
+    check("credential chooser explains the standalone pattern", "embedded" in pg.inner_text("#cred-out").lower(), pg.inner_text("#cred-out"))
+
+    gloss = pg.inner_text("#glossary")
+    for term in ("Genie Spaces", "Databricks One", "One Chat", "Ontology"):
+        check(f"glossary covers {term}", term in gloss, gloss[:120])
+    prods = pg.inner_text("#products")
+    check("product table names all three products", all(x in prods for x in ("Genie One", "Genie Agent", "Genie Code")))
+    roles = pg.inner_text("#roles")
+    check("roles table has the four ownership roles", all(x in roles for x in ("Agent owner", "Data steward", "Security reviewer", "Feedback reviewer")))
+    check("step 00 has no console errors", not pg.errors, pg.errors)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -174,7 +216,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks]
 
 if __name__ == "__main__":
     sys.exit(run())

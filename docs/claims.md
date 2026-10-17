@@ -35,9 +35,10 @@ Public documentation base: `https://docs.databricks.com/` (checked 17 Oct 2026).
 | C-25 | Monitor tab shows questions, ratings, weekly digest; users answer "Is this correct?" with Yes, Fix it or Request review; CAN MANAGE sees feedback | docs `/genie-agents/monitor` | verified | 2026-10-17 |
 | C-26 | Genie Code runs in notebooks, SQL editor, Lakeflow Pipelines Editor, AI/BI dashboards and a full-page experience; governed by the user's Unity Catalog permissions; admins manage budgets; a CLI exists | docs `/genie-code/`, `/genie-code/genie-code-cli` | verified | 2026-10-17 |
 | C-27 | Knowledge Store holds descriptions, synonyms, join relationships, SQL expressions, prompt matching and column values; scoped to the Agent; trusted assets are parameterised queries and functions verified by an author | docs `/genie-agents/concepts` | verified | 2026-10-17 |
+| C-28 | Genie chat was formerly called One Chat | internal sources only | unverified | 2026-10-17 |
 
 ## Open items for the text
 
-- C-06, C-07, C-17, C-21, C-22: the guide states these as "from Databricks field guidance; not found in public documentation, confirm with the account team".
+- C-06, C-07, C-17, C-21, C-22, C-28: the guide states these as "from Databricks field guidance; not found in public documentation, confirm with the account team".
 - C-20: left out of the guide.
 - Wave sizes (10/50/200), review cadences, adoption targets and phase durations are field-recommended and labelled so; they are not claims about the product.
