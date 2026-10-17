@@ -250,6 +250,25 @@ def steps34_checks(browser, base):
     ctx.close()
 
 
+def steps567_checks(browser, base):
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    t = step_common(pg, 5, None)
+    for term in ("Automatic Identity Management", "SCIM", "Consumer access", "Microsoft Teams", "Slack", "1 to 5 seconds", "10 minutes", "new conversation", "field guidance"):
+        check(f"step 5 covers {term}", term.lower() in t.lower(), term)
+    check("step 5 has a channel table", pg.locator("#step-5 table#channels tbody tr").count() >= 6)
+    t = step_common(pg, 6, None)
+    for term in ("aibiGenie", "genie_space_id", "Weekly", "Every two weeks", "Monthly", "Quarterly", "20 questions per minute", "field guidance", "SQL Alert"):
+        check(f"step 6 covers {term}", term.lower() in t.lower(), term)
+    t = step_common(pg, 7, None)
+    for term in ("10 users", "50 users", "200 users", "rollback", "genie_spaces", "engine: direct", "get-space", "field-recommended", "conversation history"):
+        check(f"step 7 covers {term}", term.lower() in t.lower(), term)
+    check("step 7 has a go/no-go table", pg.locator("#step-7 table#gonogo tbody tr").count() >= 5)
+    check("steps 5-7 raise no errors", not pg.errors, pg.errors)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -272,7 +291,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks]
 
 if __name__ == "__main__":
     sys.exit(run())

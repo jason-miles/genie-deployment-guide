@@ -508,22 +508,219 @@ databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}
 <!-- STEP 5 -->
 <section class="step" id="step-5">
   <div class="step-head"><div class="step-no">05</div><h2>Access &amp; consumption</h2></div>
-  <p class="lede">Provision users and choose how they reach the Agent.</p>
-  <label class="gate"><input type="checkbox" data-gate="step-5"><span><strong>Gate</strong>Target users are entitled and every consumption channel is tested end to end.</span></label>
+  <p class="lede">Provision the users, then choose how they reach the Agent. This step can run in parallel with business validation in Step 04.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Setup durations are field-recommended. Items marked field guidance were not found in public documentation; confirm them with the account team.</p>
+
+  <h3>5.1 Choose the consumption channel</h3>
+  <p>Start with the Genie Agent UI and the dashboard companion to validate. Add Genie One for the broad business rollout once the Agent is production-quality. Add other channels for specific needs, because each one adds scope your team maintains. Adding a channel to a marginal Agent only spreads the wrong answers wider.</p>
+  <div class="table-wrap">
+  <table id="channels">
+    <thead><tr><th>Channel</th><th>Best for</th><th>Setup effort</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Genie Agent UI (workspace)</td><td>Data teams, analysts</td><td>Immediate</td><td>Broadest feature coverage</td></tr>
+      <tr><td>Dashboard companion</td><td>Dashboard consumers</td><td>Immediate</td><td>Follow-up questions on a published dashboard; review the dashboard dataset scope first</td></tr>
+      <tr><td>Genie One</td><td>Broad business rollout</td><td>Days</td><td>Simplified UI for business users with Consumer access, at workspace or account level <!-- C-19 --></td></tr>
+      <tr><td>Embedded iframe</td><td>Portals and intranets</td><td>Days</td><td>Workspace admins configure the allowed embedding surfaces; viewers need access to the Agent and its data <!-- C-23 --></td></tr>
+      <tr><td>Conversation API</td><td>Custom apps, portals, chatbots</td><td>2 to 3 weeks</td><td>Programmatic multi-turn conversations</td></tr>
+      <tr><td>Microsoft Teams (Copilot Studio)</td><td>Microsoft 365 organisations</td><td>1 to 2 weeks</td><td>Through the Databricks connector for Microsoft Power Platform; inherits Conversation API limits <!-- C-24 --></td></tr>
+      <tr><td>Slack</td><td>Slack-first teams</td><td>Days</td><td>The Genie app for Slack answers when @Genie is mentioned; channel owners pin an Agent for consistent answers <!-- C-24 --></td></tr>
+      <tr><td>Custom Teams or Slack bot</td><td>Full control of the experience</td><td>3 to 4 weeks</td><td>Branded workflows and prompts on top of the Conversation API</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>5.2 Provision users</h3>
+  <p><strong>First, make users account-level identities.</strong> Users must exist in the Databricks account before a workspace can include them. There are no seat-based licences, and data stays secured by Unity Catalog, so provision as many intended users as you can.</p>
+  <ul>
+    <li><strong>Automatic Identity Management (AIM)</strong> for Microsoft Entra ID syncs users, groups and service principals without enterprise application setup, supports nested groups, and respects group membership changes. It is GA and, per field guidance, on by default for accounts created after 1 Aug 2025; older accounts enable it under Account console, Security, User provisioning. <!-- C-21 --></li>
+    <li><strong>Account-level SCIM</strong> for other identity providers such as Okta. Enable user provisioning in the account console, copy the SCIM token and URL into the identity provider&rsquo;s connector, and assign users and groups there.</li>
+  </ul>
+  <p><strong>Second, add them to a workspace with Consumer access.</strong> Consumer access is the least-privileged entitlement that is enough for Genie One chat. Add the account group, not individuals, and grant only Consumer access so business users do not receive authoring entitlements. <!-- C-19 --> Pick the workspace by topology:</p>
+  <ul>
+    <li><strong>One workspace:</strong> add them there.</li>
+    <li><strong>Dev, staging, prod in one region:</strong> use the production workspace, so users consume production content.</li>
+    <li><strong>Several workspaces or regions:</strong> either add users to each workspace that holds content they need, or create a dedicated consumer workspace and publish the Agents and dashboards to it with bundles or the Agents API.</li>
+  </ul>
+  <p>Business users need SELECT on the Unity Catalog objects the Agents use, granted through groups. Share each Agent with the group at CAN RUN. Sharing options include workspace folder inheritance, specific users or groups, all account users, a link for privileged users, and individual conversations. <!-- C-13 --> A custom account URL, where available, lets users sign in once and move across workspaces; this is field guidance.</p>
+<pre data-lang="bash"><code># Smoke-test an Agent from the CLI as the signed-in user
+databricks genie start-conversation {{spc:01ef0000000000000000000000000000}} "What was revenue last quarter?" --profile &lt;profile&gt;
+
+# Ask a data question without targeting one Agent
+databricks genie ask "What tables exist?" --profile &lt;profile&gt;</code></pre>
+
+  <h3>5.3 Build on the Conversation API</h3>
+  <ul>
+    <li>Authenticate with OAuth: service principal OAuth (M2M) for unattended workloads, user OAuth (U2M) where a browser flow exists. A user token keeps per-user Unity Catalog privileges. <!-- C-09 --></li>
+    <li>Poll message status every 1 to 5 seconds until it is COMPLETED, FAILED or CANCELLED, back off exponentially up to one minute, and stop after about 10 minutes. <!-- C-09 --></li>
+    <li>Start a new conversation for each user session, so earlier context does not leak into the next.</li>
+    <li>Add request queuing, retry logic and logging in the calling application.</li>
+    <li>The API returns tables and SQL, not rendered charts. Render visuals in your own UI.</li>
+    <li>Every Genie query still runs on the attached warehouse. Plan warehouse capacity separately from API rate limits.</li>
+    <li>Field guidance on limits: 20 questions per minute per workspace in the UI and 5 per minute on the API free tier, across all Agents, with only POST requests counted. These figures are not in the public documentation; confirm them and ask about higher capacity. <!-- C-07 --></li>
+  </ul>
+
+  <label class="gate"><input type="checkbox" data-gate="step-5"><span><strong>Gate</strong>Target users are provisioned and entitled, every chosen channel is tested end to end, and the credential pattern is documented for each channel.</span></label>
 </section>
 
 <!-- STEP 6 -->
 <section class="step" id="step-6">
   <div class="step-head"><div class="step-no">06</div><h2>Monitor &amp; operate</h2></div>
-  <p class="lede">Watch quality, usage and capacity, and keep a feedback loop running.</p>
-  <label class="gate"><input type="checkbox" data-gate="step-6"><span><strong>Gate</strong>Monitoring and alerts are live and a review cadence is scheduled.</span></label>
+  <p class="lede">An Agent without an owner and a review cadence loses accuracy within weeks. Set up monitoring, alerts and a feedback loop before the first wave.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Cadences are field-recommended starting points. Items marked field guidance were not found in public documentation.</p>
+
+  <h3>6.1 The Monitor tab</h3>
+  <p>Agent owners see every question and answer, with filters for time, rating, user and status, plus a weekly digest of message volume, active users and feedback. Users answer &ldquo;Is this correct?&rdquo; with Yes, Fix it or Request review, and anyone with CAN MANAGE reads the feedback and review requests. Ratings do not change the Agent on their own; the owner decides what to act on. <!-- C-25 --></p>
+
+  <h3>6.2 Audit logs and system tables</h3>
+  <p>Genie events land in <code>system.access.audit</code> with <code>service_name = 'aibiGenie'</code>. <!-- C-16 --></p>
+<pre data-lang="sql"><code>-- Daily Genie message volume and distinct users, last 30 days
+SELECT event_date,
+       COUNT(*) AS messages,
+       COUNT(DISTINCT user_identity.email) AS users
+FROM system.access.audit
+WHERE service_name = 'aibiGenie'
+  AND action_name = 'createConversationMessage'
+  AND event_date &gt;= current_date() - INTERVAL 30 DAYS
+GROUP BY event_date
+ORDER BY event_date;</code></pre>
+  <p>The SQL that Genie generated is in <code>system.query.history</code>. Filtering on <code>query_source.genie_space_id</code> is field guidance; confirm the column on your workspace. <!-- C-17 --></p>
+<pre data-lang="sql"><code>SELECT executed_by, start_time, total_duration_ms, execution_status, statement_text
+FROM system.query.history
+WHERE query_source.genie_space_id = '{{spc:01ef0000000000000000000000000000}}'
+ORDER BY start_time DESC
+LIMIT 100;</code></pre>
+  <p>Cost and capacity appear in <code>system.billing.usage</code> (warehouse consumption) and <code>system.compute.warehouse_events</code> (scaling triggered by Genie load).</p>
+
+  <h3>6.3 Alerts</h3>
+  <p>There is no Genie-native alert. Configure Databricks SQL Alerts on queries over the audit and warehouse tables for: spikes in conversations or users, spikes in negative feedback, rising error rates, usage approaching the rate limits, and the SQL warehouse breaking its SLA.</p>
+
+  <h3>6.4 Limits to plan around</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Limit</th><th>Value</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>Objects per Agent</td><td>50 tables, views or metric views</td><td>Documentation <!-- C-04 --></td></tr>
+      <tr><td>Instructions per Agent</td><td>100</td><td>Documentation <!-- C-11 --></td></tr>
+      <tr><td>Benchmarks per Agent</td><td>500</td><td>Documentation <!-- C-05 --></td></tr>
+      <tr><td>Conversations per Agent</td><td>200,000, with 10,000 messages per conversation</td><td>Documentation <!-- C-14 --></td></tr>
+      <tr><td>Query and message timeouts</td><td>5 minutes per SQL query, 30 minutes per message</td><td>Documentation <!-- C-15 --></td></tr>
+      <tr><td>Throughput</td><td>20 questions per minute per workspace in the UI, 5 per minute on the API free tier</td><td>Field guidance <!-- C-07 --></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>6.5 The feedback-to-curation loop</h3>
+  <ol>
+    <li><strong>Capture</strong> thumbs, review requests and repeated unanswered questions from the Monitor tab.</li>
+    <li><strong>Triage</strong> one-off issues apart from repeatable gaps; prioritise questions tied to important workflows.</li>
+    <li><strong>Curate</strong> instructions, trusted assets and entity matching, using the most structural layer (Step 03).</li>
+    <li><strong>Validate</strong> by re-running the relevant benchmarks and checking that nothing else regressed.</li>
+    <li><strong>Record and observe.</strong> Log the change in a curation log and watch the same question patterns.</li>
+  </ol>
+
+  <h3>6.6 Review cadence</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>When</th><th>Do</th></tr></thead>
+    <tbody>
+      <tr><td>Weekly</td><td>Review the Monitor tab for new question patterns, questions with negative feedback and questions Genie could not answer</td></tr>
+      <tr><td>Every two weeks</td><td>Add trusted assets for frequent questions, update entity matching for new terminology, clear review requests</td></tr>
+      <tr><td>Monthly</td><td>Run the full benchmark suite, review accuracy trends and trusted-asset coverage, discuss feedback themes with stakeholders</td></tr>
+      <tr><td>Quarterly</td><td>Audit the Agent: remove outdated instructions, update metric definitions, check data freshness and schema changes, decide whether new Agents are needed</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>As the portfolio grows, fix data quality and metadata upstream in Unity Catalog so every Agent sharing the data improves, monitor at portfolio level with system tables and benchmarks, and run a community of practice for authors with a shared benchmark library.</p>
+
+  <label class="gate"><input type="checkbox" data-gate="step-6"><span><strong>Gate</strong>An internal user guide is published, the owner has a review schedule, and SQL Alerts cover warehouse SLA, rate-limit proximity and usage spikes.</span></label>
 </section>
 
 <!-- STEP 7 -->
 <section class="step" id="step-7">
   <div class="step-head"><div class="step-no">07</div><h2>Staged rollout &amp; promotion</h2></div>
-  <p class="lede">Grow from a pilot to the full audience in waves, and promote configuration between environments.</p>
-  <label class="gate"><input type="checkbox" data-gate="step-7"><span><strong>Gate</strong>Each wave passed its go/no-go and the production Agent matches the tested configuration.</span></label>
+  <p class="lede">Grow from a pilot to the full audience in waves, and promote the tested configuration between environments instead of rebuilding it by hand.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Wave sizes and timings are field-recommended. The migration sequence follows a published bundle-based pattern; commands are untested here until marked.</p>
+
+  <h3>7.1 Roll out in waves</h3>
+  <p>Work backwards from the end state: the number of users, and the peak of concurrent questions in the busiest hour. Advance a wave only when the Agent has not changed, or leave a couple of days after any change.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Wave</th><th>Audience</th><th>When</th><th>Hold until</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>10 users</td><td>Week 0</td><td>Stability confirmed, feedback triaged</td></tr>
+      <tr><td>2</td><td>50 users</td><td>About 2 to 3 weeks later</td><td>Department-scale usage monitored, instructions iterated</td></tr>
+      <tr><td>3</td><td>200 users</td><td>About 3 to 5 weeks after wave 1</td><td>Warehouse and review capacity confirmed</td></tr>
+      <tr><td>4+</td><td>Enterprise-wide</td><td>Week 6 onward</td><td>Increase exponentially after the first stages</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>In the first weeks, the admin team and the onboarded users should work closely to resolve what the earlier steps did not anticipate. Around 500 concurrent users, or sustained high API volume, validate routing, warehouse sizing, queuing and latency early.</p>
+
+  <h3>7.2 Go/no-go before each wave</h3>
+  <div class="table-wrap">
+  <table id="gonogo">
+    <thead><tr><th>Check</th><th>Go when</th></tr></thead>
+    <tbody>
+      <tr><td>Benchmark accuracy</td><td>At or above the agreed target on the latest run</td></tr>
+      <tr><td>Warehouse</td><td>Within SLA at the current peak, with headroom for the next wave</td></tr>
+      <tr><td>Rate limits</td><td>No alert for approaching the question-per-minute limits</td></tr>
+      <tr><td>Feedback</td><td>Negative feedback triaged and critical items fixed</td></tr>
+      <tr><td>Support</td><td>Admin staffing covers the expected volume of review requests</td></tr>
+      <tr><td>Documentation</td><td>User guide, scope and access request process are published</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>When close to a limit: increase warehouse size or autoscaling; staff the review queue; and, for API throughput, ask the account team about higher capacity options.</p>
+
+  <h3>7.3 Roll back</h3>
+  <ul>
+    <li>Pause onboarding of the next group.</li>
+    <li>If a configuration change caused the regression, redeploy the previous exported configuration from Git (7.4).</li>
+    <li>If access is the problem, remove the latest wave group&rsquo;s CAN RUN on the Agent. Unity Catalog grants stay untouched.</li>
+    <li>Tell users what changed and when to retry.</li>
+  </ul>
+
+  <h3>7.4 Promote between environments</h3>
+  <p>Keep separate catalogs for dev, staging and production data, and re-run benchmarks before every promotion. The Agent configuration travels as a serialized export:</p>
+<pre data-lang="bash"><code># Export the source Agent, including its serialized configuration
+databricks genie get-space {{spc:01ef0000000000000000000000000000}} --include-serialized-space -o json --profile &lt;dev-profile&gt; &gt; genie_spaces/sales_analytics.json</code></pre>
+  <p>Edit the file for the target (catalog and schema names, and a warehouse that exists in the target workspace), commit it to Git as the audit record, then deploy. Declarative Automation Bundles manage Agents natively through the <code>genie_spaces</code> resource, which needs the direct deployment engine and CLI 1.3.0 or later. <!-- C-08 --></p>
+<pre data-lang="yaml"><code>bundle:
+  name: genie-agents
+  engine: direct
+
+resources:
+  genie_spaces:
+    sales_analytics:
+      title: Sales analytics
+      warehouse_id: {{wh:abcdef1234567890}}
+      parent_path: /Workspace/Shared/genie
+      file_path: ./genie_spaces/sales_analytics.json
+      permissions:
+        - group_name: {{grp:analysts}}
+          level: CAN_RUN
+
+targets:
+  prod:
+    workspace:
+      host: https://&lt;prod-workspace&gt;.cloud.databricks.com</code></pre>
+<pre data-lang="bash"><code>databricks bundle validate -t prod --profile &lt;prod-profile&gt;
+databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
+  <p>Run the export and the deployment as service principals with the least access needed: CAN EDIT on the source Agent, and on the target CAN USE on the warehouse and CAN MANAGE on the parent folder. Without bundles, <code>databricks genie create-space</code> and <code>update-space</code> take the same serialized payload.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Not carried over</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>Conversation history</td><td>None. Conversations belong to the workspace.</td></tr>
+      <tr><td>Unity Catalog grants</td><td>Configure them separately in the target</td></tr>
+      <tr><td>Environment-specific table names</td><td>Edit the exported file before committing</td></tr>
+      <tr><td>Unity Catalog functions</td><td>The export references functions without defining them; make sure they exist in the target with the right grants</td></tr>
+      <tr><td>The Agent ID</td><td>The target gets a new ID. Record it for later updates</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <label class="gate"><input type="checkbox" data-gate="step-7"><span><strong>Gate</strong>Each wave passed its go/no-go, a rollback has been rehearsed, and the production Agent matches the Git-recorded, benchmarked configuration.</span></label>
   <footer>Licensed under Apache 2.0. Features and limits change; check the linked Databricks documentation before running anything in production.</footer>
 </section>
 
