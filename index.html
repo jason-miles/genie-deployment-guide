@@ -376,15 +376,133 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
 <!-- STEP 3 -->
 <section class="step" id="step-3">
   <div class="step-head"><div class="step-no">03</div><h2>Build the Agent</h2></div>
-  <p class="lede">Curate the Agent in layers: metadata, metric views, expressions, example SQL, then text.</p>
-  <label class="gate"><input type="checkbox" data-gate="step-3"><span><strong>Gate</strong>The Agent has sample questions, example SQL and a first benchmark set.</span></label>
+  <p class="lede">An Agent can be created in minutes and is only worth trusting after curation. Build a thin version first, then add structure in layers, using the most structural layer that can express each rule.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. The ten-day plan is a field-recommended playbook, not a fixed schedule; a build typically takes one to four weeks from zero.</p>
+
+  <h3>3.1 The curation hierarchy</h3>
+  <p>Work down this list. Reserve text for behaviour that nothing above it can express. The documentation puts SQL expressions first among Agent-level options, example SQL second and text instructions last. <!-- C-10 --></p>
+  <ol id="curation">
+    <li><strong>Unity Catalog metadata.</strong> Accurate table and column descriptions, keys and tags. The same work helps every other consumer of the catalog.</li>
+    <li><strong>Metric Views.</strong> Live in Unity Catalog, not in the Agent. They give a deterministic KPI definition that applies wherever the view is referenced.</li>
+    <li><strong>SQL expressions.</strong> Named measures, filters and dimensions in the Agent, reused instead of reinvented per question.</li>
+    <li><strong>Parameterised example SQL.</strong> Verified queries mapped to common question patterns; when a question matches, Genie can use the query directly.</li>
+    <li><strong>Text instructions.</strong> Terminology, formatting and clarification behaviour. They iterate quickly but are open to interpretation.</li>
+  </ol>
+  <p>Each Agent has a limit of 100 instructions, where every example SQL query, every SQL function and the whole general-instructions block counts as one. <!-- C-11 --></p>
+
+  <h3>3.2 What the Knowledge Store holds</h3>
+  <p>Table and column descriptions, synonyms, join relationships, SQL expressions, prompt matching settings and column values. Everything in it is scoped to the Agent and does not change Unity Catalog. <!-- C-27 --> Turn on entity matching for categorical columns (regions, statuses, product names) so a prompt that says &ldquo;Florida&rdquo; resolves to a stored value of &ldquo;FL&rdquo;, and enable format assistance on important columns so Genie sees representative values. Define join relationships so joins are consistent, or pre-join frequently joined tables into views.</p>
+
+  <h3>3.3 Sample questions</h3>
+  <p>Configure 6 to 10 sample questions per Agent. Write literal questions with the real metrics and entities the Agent owns, not templated placeholders, and mirror the patterns your trusted assets cover:</p>
+  <ul>
+    <li>What was revenue for Q1 2026?</li>
+    <li>Who are the top 10 customers by bookings this year?</li>
+    <li>How does gross margin compare across regions?</li>
+  </ul>
+
+  <h3>3.4 Example configuration</h3>
+<pre data-lang="sql"><code>-- SQL expression (measure): net revenue
+SUM(order_total) - SUM(returns_total)
+
+-- Parameterised example SQL, with the phrasing it answers in a comment
+-- "What was revenue for EMEA in Q1?"  "Show Q1 EMEA sales"
+SELECT SUM(order_total) AS revenue
+FROM {{cat:main}}.{{sch:sales}}.{{tbl:orders}}
+WHERE region = :region AND order_quarter = :quarter;</code></pre>
+
+  <h3>3.5 The two-week plan</h3>
+  <p>Field-recommended. Keep one domain per Agent and five or fewer tables.</p>
+  <div class="table-wrap">
+  <table id="plan">
+    <thead><tr><th>Day</th><th>Focus</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td>Day 1</td><td>Scope, audience, success</td><td>One domain, 10 to 20 representative questions, success metrics</td></tr>
+      <tr><td>Day 2</td><td>Curate datasets</td><td>The smallest table set that answers the questions; pre-joined views where tables always join</td></tr>
+      <tr><td>Day 3</td><td>Create a thin Agent</td><td>Warehouse attached, tables added, description and a few sample questions; a baseline</td></tr>
+      <tr><td>Day 4</td><td>Metadata and Knowledge Store</td><td>Column descriptions, synonyms, entity matching, confusing columns hidden</td></tr>
+      <tr><td>Day 5</td><td>First question pass</td><td>Each failure logged with the layer that should fix it</td></tr>
+      <tr><td>Day 6</td><td>SQL expressions</td><td>Core metrics and standard filters defined once</td></tr>
+      <tr><td>Day 7</td><td>Example SQL</td><td>Examples for joins, window functions, cohorts and period comparisons</td></tr>
+      <tr><td>Day 8</td><td>Text instructions</td><td>Jargon, formatting and clarification rules, kept short</td></tr>
+      <tr><td>Day 9</td><td>Benchmarks</td><td>Questions turned into benchmarks; accuracy measured before and after changes</td></tr>
+      <tr><td>Day 10</td><td>User testing and readiness</td><td>A small business group using the Agent; a go or no-go for wider rollout</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>3.6 Troubleshooting</h3>
+  <div class="table-wrap">
+  <table id="trouble">
+    <thead><tr><th>Symptom</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Misunderstands jargon</td><td>Precise column descriptions and Agent-scoped synonyms; example SQL that shows the interpretation; short text for critical terms</td></tr>
+      <tr><td>Uses the wrong tables</td><td>Remove extra tables; pre-join into governed views or metric views; say in table descriptions which table is authoritative</td></tr>
+      <tr><td>Uses the wrong columns</td><td>Hide internal columns; clearer names and descriptions; entity matching on representative columns</td></tr>
+      <tr><td>Filters on values that do not exist</td><td>Sample values for key dimensions; define canonical filters as SQL expressions</td></tr>
+      <tr><td>Joins incorrectly</td><td>Move joins upstream into views with explicit keys; document joins in the Knowledge Store and example SQL where keys cannot be set</td></tr>
+      <tr><td>Computes metrics differently from dashboards</td><td>Define the metric as one SQL expression; remove conflicting guidance; promote critical metrics to trusted assets</td></tr>
+      <tr><td>Ignores instructions</td><td>Shorten and prioritise; move logic into expressions or example SQL; put global behaviour at the end of the instructions</td></tr>
+      <tr><td>Slow or timing out</td><td>Use a pro or serverless warehouse with CAN USE; keep datasets small; pre-aggregate in metric views. Genie cancels queries over 5 minutes and messages over 30 minutes <!-- C-15 --></td></tr>
+      <tr><td>References tables or columns that do not exist</td><td>Confirm assets are registered in Unity Catalog and still match; Agent edits do not overwrite Unity Catalog metadata</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout warn"><strong>High-stakes answers</strong>For financial reporting, compliance or safety questions, encode the logic as SQL expressions and trusted assets (parameterised queries or SQL functions) instead of free-form generation, and keep a gold-question benchmark suite that validates every change.</div>
+
+  <label class="gate"><input type="checkbox" data-gate="step-3"><span><strong>Gate</strong>The Agent has sample questions, SQL expressions and example SQL for its core patterns, and a first benchmark set built from the Step 01 questions.</span></label>
 </section>
 
 <!-- STEP 4 -->
 <section class="step" id="step-4">
   <div class="step-head"><div class="step-no">04</div><h2>Benchmark &amp; validate</h2></div>
-  <p class="lede">Measure accuracy, then validate with technical and business users.</p>
-  <label class="gate"><input type="checkbox" data-gate="step-4"><span><strong>Gate</strong>Benchmark accuracy meets the production gate and power users have signed off.</span></label>
+  <p class="lede">A production Agent is one that has measured accuracy. Benchmark first, let technical users live with the Agent, then bring in business power users.</p>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation. Durations and the accuracy target are field guidance and are not published limits.</p>
+
+  <h3>4.1 Build the benchmark suite</h3>
+  <p>A benchmark is a question paired with the SQL that answers it correctly. Cover the 15 to 20 questions users are most likely to ask, with two to four phrasings each: roughly 30 to 80 benchmarks. An Agent supports up to 500. <!-- C-05 --> Use the auto-suggested benchmarks to seed the set. Cover these categories:</p>
+  <ul>
+    <li>Simple aggregations: &ldquo;What is total revenue?&rdquo;</li>
+    <li>Time-based queries: &ldquo;How did sales compare month over month?&rdquo;</li>
+    <li>Filtered queries: &ldquo;Show me only enterprise customers.&rdquo;</li>
+    <li>Multi-table joins: &ldquo;Which products did our top customers buy?&rdquo;</li>
+    <li>Top-N rankings: &ldquo;Who are our top 10 accounts by revenue?&rdquo;</li>
+    <li>Complex business logic: &ldquo;What is our customer churn rate?&rdquo;</li>
+  </ul>
+  <p>Benchmarks run as independent conversations without threaded context. In chat mode a result counts as good when the SQL matches exactly or the result set matches, allowing for different sorting and rounding to the same four significant digits. <!-- C-25 --></p>
+
+  <h3>4.2 Run and read results</h3>
+  <p>Run the suite after every significant change to instructions or data, and track the score over time. The benchmark evaluation commands are in Beta and may change.</p>
+<pre data-lang="bash"><code># Start a benchmark run, then read it back (Beta commands)
+databricks genie genie-create-eval-run {{spc:01ef0000000000000000000000000000}} --profile &lt;profile&gt;
+databricks genie genie-get-eval-run {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;
+databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;</code></pre>
+  <div class="callout note"><strong>The 80% gate</strong>Field guidance is to hold an Agent at about 80% benchmark accuracy before promoting it. This number is not in the public documentation, so treat it as a starting point and set the threshold per use case. Below the gate, an Agent is not ready regardless of how it feels in a demo. <!-- C-06 --></div>
+
+  <h3>4.3 Technical validation</h3>
+  <p>The Agent owner and other editors use the Agent themselves for 1 to 2 weeks (field-recommended), adjusting context and re-running benchmarks as new questions arise. Check that:</p>
+  <ul class="check">
+    <li><label><input type="checkbox"><span>The Agent uses as few tables as possible, keys are set, and column names and descriptions are clear and in the language users prefer.</span></label></li>
+    <li><label><input type="checkbox"><span>Entity matching covers prompts that differ from stored values.</span></label></li>
+    <li><label><input type="checkbox"><span>Ten or more example SQL queries cover the most common questions, parameterised where possible.</span></label></li>
+    <li><label><input type="checkbox"><span>Measures, filters and dimensions that can be structural are SQL expressions, not prose.</span></label></li>
+    <li><label><input type="checkbox"><span>Benchmarks hold the accuracy target across the validation period.</span></label></li>
+  </ul>
+
+  <h3>4.4 Business validation</h3>
+  <p>Onboard about five business power users, preferably those who defined the scope. Temporary workspace access with SQL entitlements and permission to run the Agent is enough; the full access setup comes in Step 05. Run this for 1 to 2 weeks (field-recommended). Major changes restart the timer.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Evidence</th><th>Exit when</th></tr></thead>
+    <tbody>
+      <tr><td>Technical validation</td><td>Benchmarks at the target for 1 to 2 weeks and editors have used the Agent for 1 to 2 weeks</td></tr>
+      <tr><td>Business validation</td><td>Power users tested for 1 to 2 weeks with no major changes needed, and critical feedback is resolved</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Expect to keep reviewing feedback for the life of the Agent. Steps 05 and 06 can run in parallel with business validation.</p>
+
+  <label class="gate"><input type="checkbox" data-gate="step-4"><span><strong>Gate</strong>Benchmark accuracy meets the agreed target over the validation period and the business power users have signed off.</span></label>
 </section>
 
 <!-- STEP 5 -->

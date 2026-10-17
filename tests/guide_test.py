@@ -231,6 +231,25 @@ def steps12_checks(browser, base):
     ctx.close()
 
 
+def steps34_checks(browser, base):
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    t = step_common(pg, 3, None)
+    items = [x.lower() for x in pg.locator("#curation > li").all_inner_texts()]
+    order = ["unity catalog metadata", "metric view", "sql expression", "example sql", "text instruction"]
+    check("curation hierarchy lists five layers in order", len(items) == 5 and all(o in i for o, i in zip(order, items)), items)
+    for term in ("6 to 10", "100 instructions", "Knowledge Store", "entity matching", "field-recommended"):
+        check(f"step 3 covers {term}", term.lower() in t.lower(), term)
+    check("step 3 two-week plan has ten day rows", pg.locator("#plan tbody tr").count() == 10)
+    check("step 3 troubleshooting table has nine or more rows", pg.locator("#trouble tbody tr").count() >= 9)
+    t = step_common(pg, 4, None)
+    for term in ("30 to 80", "500", "80%", "field guidance", "Simple aggregations", "Time-based", "Filtered", "Multi-table joins", "Top-N", "Complex business logic", "1 to 2 weeks", "genie-create-eval-run"):
+        check(f"step 4 covers {term}", term.lower() in t.lower(), term)
+    check("steps 3-4 raise no errors", not pg.errors, pg.errors)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -253,7 +272,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks]
 
 if __name__ == "__main__":
     sys.exit(run())
