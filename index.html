@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genie Deployment Guide: From Proof of Concept to Enterprise Rollout</title>
+  <meta name="description" content="A step-by-step guide for deploying Databricks Genie Agents at enterprise scale: scope, data, governance, build, benchmarks, access, monitoring and staged rollout. Distinguishes Genie One, Genie Agents and Genie Code.">
+  <meta name="theme-color" content="#0B2026">
+  <meta property="og:title" content="Genie deployment guide: from proof of concept to enterprise rollout">
+  <meta property="og:description" content="Eight steps with gates, commands and failure modes for Genie Agents, plus how Genie One and Genie Code fit.">
+  <meta property="og:type" content="article">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/dm-sans-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="progress"><span></span></div>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="side-head">
+    <div>
+      <div class="brand">Genie <b>&rarr;</b> Production</div>
+      <div class="sub">Genie deployment guide</div>
+    </div>
+    <button class="btn" id="navtoggle" type="button" aria-expanded="false" aria-controls="sidenav">Menu</button>
+  </div>
+  <div id="sidenav">
+  <input id="filter" type="search" placeholder="Filter steps (e.g. benchmarks, Genie One)" aria-label="Filter steps">
+  <button class="btn search-btn" id="search-open" type="button">Search all content <kbd>Ctrl K</kbd></button>
+  <div class="overall"><div class="meter" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div><p id="overall-label">0% complete</p></div>
+  <p class="gate-tally" id="gate-tally" aria-live="polite"></p>
+  <nav aria-label="Steps">
+    <ol>
+      <li><a href="#step-0"><span class="n">00</span>Choose your path</a></li>
+      <li><a href="#step-1"><span class="n">01</span>Discover &amp; scope</a></li>
+      <li><a href="#step-2"><span class="n">02</span>Data &amp; governance</a></li>
+      <li><a href="#step-3"><span class="n">03</span>Build the Agent</a></li>
+      <li><a href="#step-4"><span class="n">04</span>Benchmark &amp; validate</a></li>
+      <li><a href="#step-5"><span class="n">05</span>Access &amp; consumption</a></li>
+      <li><a href="#step-6"><span class="n">06</span>Monitor &amp; operate</a></li>
+      <li><a href="#step-7"><span class="n">07</span>Staged rollout &amp; promotion</a></li>
+    </ol>
+  </nav>
+  <div class="side-foot">
+    <button class="btn" id="theme" type="button">Theme</button>
+    <button class="btn" id="print" type="button">Print</button>
+  </div>
+  </div>
+</aside>
+
+<main id="main">
+<header class="hero">
+  <div class="eyebrow">Databricks &middot; Genie</div>
+  <h1>Genie deployment guide: from proof of concept to enterprise rollout</h1>
+  <p>Eight steps for taking a Genie Agent from a working demo to a governed, monitored service. Each step gives the action, the gate to pass, and the failure modes seen in practice.</p>
+</header>
+
+<!-- STEP 0 -->
+<section class="step" id="step-0">
+  <div class="step-head"><div class="step-no">00</div><h2>Choose your path</h2></div>
+  <p class="lede">Genie is a family of three experiences on one governed data foundation. Pick the one that matches the job before planning a rollout.</p>
+
+  <div class="card" id="env">
+    <h3 class="flush">Your environment</h3>
+    <p class="hint">Enter your names once. Every sample rewrites itself, and Copy gives you commands ready to run. Values stay in this browser.</p>
+    <div class="env-grid">
+      <div><label for="v-cat">UC catalog</label><input id="v-cat" data-var="cat" value="main" autocomplete="off" spellcheck="false"></div>
+      <div><label for="v-sch">UC schema</label><input id="v-sch" data-var="sch" value="sales" autocomplete="off" spellcheck="false"></div>
+      <div><label for="v-tbl">Table</label><input id="v-tbl" data-var="tbl" value="orders" autocomplete="off" spellcheck="false"></div>
+      <div><label for="v-spc">Agent (space) ID</label><input id="v-spc" data-var="spc" value="01ef0000000000000000000000000000" autocomplete="off" spellcheck="false"></div>
+      <div><label for="v-wh">Warehouse ID</label><input id="v-wh" data-var="wh" value="abcdef1234567890" autocomplete="off" spellcheck="false"></div>
+      <div><label for="v-grp">Group</label><input id="v-grp" data-var="grp" value="analysts" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <button class="btn" id="env-reset" type="button">Reset to defaults</button>
+  </div>
+
+  <div class="gates">
+  <label class="gate"><input type="checkbox" data-gate="step-0"><span><strong>Gate</strong>The product, the audience and the owner are named for this rollout.</span></label>
+  </div>
+</section>
+
+<!-- STEP 1 -->
+<section class="step" id="step-1">
+  <div class="step-head"><div class="step-no">01</div><h2>Discover &amp; scope</h2></div>
+  <p class="lede">Rank candidate topics, define the questions, and name an owner before any configuration starts.</p>
+  <label class="gate"><input type="checkbox" data-gate="step-1"><span><strong>Gate</strong>Use cases are ranked, 20 to 50 questions are listed, and an owner is named.</span></label>
+</section>
+
+<!-- STEP 2 -->
+<section class="step" id="step-2">
+  <div class="step-head"><div class="step-no">02</div><h2>Data &amp; governance</h2></div>
+  <p class="lede">Make the data trustworthy and the access model explicit before the Agent exists.</p>
+<pre data-lang="sql"><code>GRANT SELECT ON TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} TO `{{grp:analysts}}`;</code></pre>
+  <label class="gate"><input type="checkbox" data-gate="step-2"><span><strong>Gate</strong>Tables are documented in Unity Catalog and the credential model is recorded.</span></label>
+</section>
+
+<!-- STEP 3 -->
+<section class="step" id="step-3">
+  <div class="step-head"><div class="step-no">03</div><h2>Build the Agent</h2></div>
+  <p class="lede">Curate the Agent in layers: metadata, metric views, expressions, example SQL, then text.</p>
+  <label class="gate"><input type="checkbox" data-gate="step-3"><span><strong>Gate</strong>The Agent has sample questions, example SQL and a first benchmark set.</span></label>
+</section>
+
+<!-- STEP 4 -->
+<section class="step" id="step-4">
+  <div class="step-head"><div class="step-no">04</div><h2>Benchmark &amp; validate</h2></div>
+  <p class="lede">Measure accuracy, then validate with technical and business users.</p>
+  <label class="gate"><input type="checkbox" data-gate="step-4"><span><strong>Gate</strong>Benchmark accuracy meets the production gate and power users have signed off.</span></label>
+</section>
+
+<!-- STEP 5 -->
+<section class="step" id="step-5">
+  <div class="step-head"><div class="step-no">05</div><h2>Access &amp; consumption</h2></div>
+  <p class="lede">Provision users and choose how they reach the Agent.</p>
+  <label class="gate"><input type="checkbox" data-gate="step-5"><span><strong>Gate</strong>Target users are entitled and every consumption channel is tested end to end.</span></label>
+</section>
+
+<!-- STEP 6 -->
+<section class="step" id="step-6">
+  <div class="step-head"><div class="step-no">06</div><h2>Monitor &amp; operate</h2></div>
+  <p class="lede">Watch quality, usage and capacity, and keep a feedback loop running.</p>
+  <label class="gate"><input type="checkbox" data-gate="step-6"><span><strong>Gate</strong>Monitoring and alerts are live and a review cadence is scheduled.</span></label>
+</section>
+
+<!-- STEP 7 -->
+<section class="step" id="step-7">
+  <div class="step-head"><div class="step-no">07</div><h2>Staged rollout &amp; promotion</h2></div>
+  <p class="lede">Grow from a pilot to the full audience in waves, and promote configuration between environments.</p>
+  <label class="gate"><input type="checkbox" data-gate="step-7"><span><strong>Gate</strong>Each wave passed its go/no-go and the production Agent matches the tested configuration.</span></label>
+  <footer>Licensed under Apache 2.0. Features and limits change; check the linked Databricks documentation before running anything in production.</footer>
+</section>
+
+</main>
+</div>
+<dialog id="palette" aria-label="Search the guide">
+  <form method="dialog" class="pal-top"><input id="pal-q" type="text" role="combobox" aria-expanded="false" aria-controls="pal-list" aria-autocomplete="list" enterkeyhint="search" placeholder="Search commands, terms, steps" autocomplete="off" aria-label="Search the guide"><button class="btn" value="x">Close</button></form>
+  <ul id="pal-list" role="listbox" aria-label="Search results" tabindex="0"></ul>
+  <p class="pal-foot">Enter to jump. Esc to close.</p>
+</dialog>
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>
