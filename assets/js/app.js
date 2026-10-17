@@ -133,7 +133,12 @@
   });
 
   // Persisted checklists
-  $$('ul.check input').forEach((box, i) => {
+  $$('ul.check.dev input').forEach((box, i) => {
+    const key = 'genie-chk-dev-' + i;
+    box.checked = store.getItem(key) === '1';
+    box.addEventListener('change', () => store.setItem(key, box.checked ? '1' : '0'));
+  });
+  $$('ul.check:not(.dev) input').forEach((box, i) => {
     const key = 'genie-chk-' + i;
     box.checked = store.getItem(key) === '1';
     box.addEventListener('change', () => {
@@ -142,20 +147,20 @@
     });
   });
   function tally() {
-    const all = $$('ul.check input');
+    const all = $$('ul.check:not(.dev) input');
     const done = all.filter(b => b.checked).length;
     const tl = $('#tally'); if (tl) tl.textContent = `${done} / ${all.length} checklist items complete`;
     overall();
   }
   tally();
   $('#reset')?.addEventListener('click', () => {
-    $$('ul.check input').forEach((b, i) => { b.checked = false; store.removeItem('genie-chk-' + i); });
+    $$('ul.check:not(.dev) input').forEach((b, i) => { b.checked = false; store.removeItem('genie-chk-' + i); });
     tally();
   });
 
   // Overall progress: gates plus checklist items
   function overall() {
-    const items = [...$$('input[data-gate]'), ...$$('ul.check input')];
+    const items = [...$$('input[data-gate]'), ...$$('ul.check:not(.dev) input')];
     const done = items.filter(i => i.checked).length;
     const pct = items.length ? Math.round(done / items.length * 100) : 0;
     $('.meter span').style.width = pct + '%';
@@ -273,4 +278,10 @@
   const showCred = () => { $('#cred-out').textContent = CRED[$('#cred').value]; };
   $('#cred').addEventListener('change', showCred);
   showCred();
+  // Developer track: open on its hash and on any link to it
+  const track = $('#developer-track details');
+  const openTrack = () => { if (track) track.open = true; };
+  if (location.hash === '#developer-track') openTrack();
+  addEventListener('hashchange', () => { if (location.hash === '#developer-track') openTrack(); });
+  document.addEventListener('click', e => { if (e.target.closest('a[href="#developer-track"]')) openTrack(); });
 })();

@@ -25,7 +25,7 @@ Public documentation base: `https://docs.databricks.com/` (checked 17 Oct 2026).
 | C-15 | Genie cancels SQL queries running over 5 minutes and messages running over 30 minutes | docs `/genie-agents/troubleshooting` | verified | 2026-10-17 |
 | C-16 | Audit log `service_name` is `aibiGenie`; actions include createSpace, getSpace, updateSpace, createConversation, createConversationMessage | docs audit log reference | verified | 2026-10-17 |
 | C-17 | `system.query.history` identifies Genie queries through `query_source.genie_space_id` | internal sources only | unverified | 2026-10-17 |
-| C-18 | Genie Ontology is a semantic layer mapping business terms, metrics and relationships, governed through metric views, Pages and Domains | Databricks blog, "How to roll out Genie One", 28 Sep 2026; not in Agents docs | verified (blog only) | 2026-10-17 |
+| C-18 | Genie Ontology is a semantic layer mapping business terms, metrics and relationships, governed through metric views, Pages and Domains; the Genie Code docs mark Genie Ontology as Public Preview | Databricks blog, "How to roll out Genie One", 28 Sep 2026; docs `/genie-code/features-capabilities` | verified | 2026-10-17 |
 | C-19 | Genie One is GA at workspace and account level; Consumer access is the least-privileged entitlement for Genie One chat; account-only experience and Domains are Beta | docs `/genie-one/` | verified | 2026-10-17 |
 | C-20 | Share to Account Users (embedded credentials) was a private preview that the account-level Genie path supersedes | internal sources only | unverified (omitted from guide) | 2026-10-17 |
 | C-21 | Automatic Identity Management is GA and enabled by default for accounts created after 1 Aug 2025 | internal sources only | unverified | 2026-10-17 |
@@ -36,6 +36,10 @@ Public documentation base: `https://docs.databricks.com/` (checked 17 Oct 2026).
 | C-26 | Genie Code runs in notebooks, SQL editor, Lakeflow Pipelines Editor, AI/BI dashboards and a full-page experience; governed by the user's Unity Catalog permissions; admins manage budgets; a CLI exists | docs `/genie-code/`, `/genie-code/genie-code-cli` | verified | 2026-10-17 |
 | C-27 | Knowledge Store holds descriptions, synonyms, join relationships, SQL expressions, prompt matching and column values; scoped to the Agent; trusted assets are parameterised queries and functions verified by an author | docs `/genie-agents/concepts` | verified | 2026-10-17 |
 | C-28 | Genie chat was formerly called One Chat | internal sources only | unverified | 2026-10-17 |
+| C-29 | Genie Code instructions: personal `.assistant_instructions.md` in the user's folder, workspace-wide `.assistant_workspace_instructions.md` (admins only, takes precedence), 20,000 character limit, `AGENTS.md` and `CLAUDE.md` files are picked up automatically | docs `/genie-code/instructions` | verified | 2026-10-17 |
+| C-30 | Genie Code agent skills are folders containing `SKILL.md` with name and description frontmatter, in `Workspace/.assistant/skills/` or `/Users/<user>/.assistant/skills/`; loaded when relevant or by @mention; admins manage workspace skills | docs `/genie-code/skills` | verified | 2026-10-17 |
+| C-31 | Genie Code needs partner-powered AI features enabled at account and workspace level for agentic capabilities (otherwise a Databricks-hosted model without them); it sends prompt, table and column names, descriptions, code, data samples and outputs within the user's permissions; account admins manage budgets | docs `/genie-code/` | verified | 2026-10-17 |
+| C-32 | Genie Code has agent mode by default, chat, domain agents (data science, data engineering, document processing, dashboards, MLflow); Databricks recommends reviewing generated code before running it | docs `/genie-code/features-capabilities` | verified | 2026-10-17 |
 
 ## Open items for the text
 

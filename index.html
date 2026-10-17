@@ -41,6 +41,7 @@
       <li><a href="#step-5"><span class="n">05</span>Access &amp; consumption</a></li>
       <li><a href="#step-6"><span class="n">06</span>Monitor &amp; operate</a></li>
       <li><a href="#step-7"><span class="n">07</span>Staged rollout &amp; promotion</a></li>
+      <li><a href="#developer-track"><span class="n">GC</span>Genie Code track</a></li>
     </ol>
   </nav>
   <div class="side-foot">
@@ -118,7 +119,7 @@
       <tr><td>Genie Agent</td><td>Formerly <strong>Genie Spaces</strong>. API paths still read <code>/api/2.0/genie/spaces</code> and the bundle resource is <code>genie_spaces</code>. <!-- C-01 C-08 --></td></tr>
       <tr><td>Genie One</td><td>Formerly <strong>Databricks One</strong>. <!-- C-02 --></td></tr>
       <tr><td>Genie chat</td><td>Formerly <strong>One Chat</strong>, the chat surface inside Genie One. Per Databricks field guidance; not confirmed in public documentation. <!-- C-28 --></td></tr>
-      <tr><td>Genie Ontology</td><td>A semantic layer that maps business terms, metrics and relationships, governed through metric views, Pages and Domains. Described in a Databricks blog post; the Agents documentation does not yet cover it. <!-- C-18 --></td></tr>
+      <tr><td>Genie Ontology</td><td>A semantic layer that maps business terms, metrics and relationships, governed through metric views, Pages and Domains. Described in a Databricks blog post and marked Public Preview in the Genie Code documentation. <!-- C-18 --></td></tr>
       <tr><td>Knowledge Store</td><td>The Agent-scoped set of curated definitions: descriptions, synonyms, join relationships, SQL expressions and prompt matching. It does not change Unity Catalog metadata. <!-- C-27 --></td></tr>
       <tr><td>Consumer access</td><td>The least-privileged workspace entitlement that is enough for Genie One chat. <!-- C-19 --></td></tr>
       <tr><td>Benchmark</td><td>A saved question with its expected SQL, used to measure Agent accuracy.</td></tr>
@@ -298,7 +299,7 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.{{tbl:orders}} ADD CONSTRAINT orders_pk P
   <p>Put metadata on table and column descriptions first. Only the relevant subset is sent with each prompt, which leaves more context for the question. Avoid repeating column semantics in general instructions.</p>
 
   <h3>2.3 Metric Views and the Ontology</h3>
-  <p>A Metric View defines a KPI once in Unity Catalog and applies it wherever the view is queried, so Genie uses the approved definition instead of rebuilding the formula. Prefer Metric Views over Agent-level SQL expressions when a KPI is shared across Agents. An Agent accepts up to 50 tables, views or metric views; start with five or fewer, and use Metric Views or views to pre-join detail instead of adding tables. <!-- C-04 --> Genie Ontology adds a semantic layer of business terms, metrics and relationships, governed through metric views, Pages and Domains. <!-- C-18 --> It is described in a Databricks blog post and is not yet covered in the Agents documentation, so treat its behaviour as subject to change.</p>
+  <p>A Metric View defines a KPI once in Unity Catalog and applies it wherever the view is queried, so Genie uses the approved definition instead of rebuilding the formula. Prefer Metric Views over Agent-level SQL expressions when a KPI is shared across Agents. An Agent accepts up to 50 tables, views or metric views; start with five or fewer, and use Metric Views or views to pre-join detail instead of adding tables. <!-- C-04 --> Genie Ontology adds a semantic layer of business terms, metrics and relationships, governed through metric views, Pages and Domains. <!-- C-18 --> It is described in a Databricks blog post and marked Public Preview in the Genie Code documentation, so treat its behaviour as subject to change.</p>
 
   <h3>2.4 Quality gates before a table joins a production Agent</h3>
   <div class="table-wrap">
@@ -722,6 +723,58 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
 
   <label class="gate"><input type="checkbox" data-gate="step-7"><span><strong>Gate</strong>Each wave passed its go/no-go, a rollback has been rehearsed, and the production Agent matches the Git-recorded, benchmarked configuration.</span></label>
   <footer>Licensed under Apache 2.0. Features and limits change; check the linked Databricks documentation before running anything in production.</footer>
+</section>
+
+<!-- DEVELOPER TRACK -->
+<section class="step track" id="developer-track">
+  <div class="step-head"><div class="step-no">GC</div><h2>Developer track: Genie Code</h2></div>
+  <p class="lede">Genie Code is the AI coding and data assistant for developers. It is not part of the Agent rollout gates and does not count toward the progress meter. Use this track to enable it safely and to speed up Agent authoring.</p>
+  <details>
+  <summary>Show the Genie Code track</summary>
+  <p class="verified">Last verified: 17 Oct 2026 against Databricks documentation.</p>
+
+  <h3>What it does</h3>
+  <p>Genie Code works as an autonomous agent by default and also offers a chat interface. It runs in notebooks, the SQL editor, the Lakeflow Pipelines Editor, AI/BI dashboards and MLflow, and has a full-page experience; a CLI also exists. <!-- C-26 --> Domain agents cover data science, data engineering, document processing, dashboards and MLflow. <!-- C-32 --> Databricks recommends reviewing any generated code before running it.</p>
+
+  <h3>Enable it</h3>
+  <ul>
+    <li>Turn on partner-powered AI features at both account and workspace level. Without them Genie Code stays available but uses a Databricks-hosted model without its agentic capabilities. <!-- C-31 --></li>
+    <li>Confirm the region supports it; Genie Code is a designated service that uses Geos for data residency. See the Databricks designated services page.</li>
+    <li>Account administrators manage budgets and cost controls. <!-- C-31 --></li>
+  </ul>
+
+  <h3>Governance</h3>
+  <p>Genie Code is governed by the user&rsquo;s Unity Catalog permissions, so it can only reach data and perform operations the user is allowed to. It sends the prompt and relevant context to the model: table and column names, descriptions, the code in use, data samples and cell outputs, all within those permissions. <!-- C-31 --> Review this against your Tier 2 and Tier 3 compliance items in Step 02 before enabling it for regulated data.</p>
+
+  <h3>Guide it with instructions and skills</h3>
+  <ul>
+    <li>Personal instructions live in <code>.assistant_instructions.md</code> in the user&rsquo;s folder. Workspace-wide instructions live in <code>.assistant_workspace_instructions.md</code>, are set by workspace administrators and take precedence. Each file is limited to 20,000 characters, and <code>AGENTS.md</code> and <code>CLAUDE.md</code> files are picked up automatically. <!-- C-29 --></li>
+    <li>Skills are folders with a <code>SKILL.md</code> file (name and description frontmatter) in <code>Workspace/.assistant/skills/</code> or the user&rsquo;s <code>.assistant/skills/</code>. Genie Code loads them when relevant or when mentioned with @. <!-- C-30 --></li>
+  </ul>
+<pre data-lang="md"><code># Genie Agent authoring conventions
+- Write table and column comments in plain business language, one sentence each.
+- Name the grain of every fact table in its comment.
+- Never use SELECT * in example SQL; list the columns.
+- Use three-level names: {{cat:main}}.{{sch:sales}}.table.</code></pre>
+
+  <h3>Use it to build Agents</h3>
+  <p>Suggested uses, each reviewed by the Agent owner as any other change:</p>
+  <ul>
+    <li>Draft table and column descriptions, then check them against the business glossary (Step 02).</li>
+    <li>Draft metric view definitions and SQL expressions for the core KPIs (Step 03).</li>
+    <li>Write candidate benchmark SQL for the Step 01 questions, then verify each against a trusted report (Step 04).</li>
+    <li>Generate the audit and monitoring queries in Step 06 for your workspace.</li>
+  </ul>
+
+  <h3>Checklist</h3>
+  <ul class="check dev">
+    <li><label><input type="checkbox"><span>Partner-powered AI features are enabled at account and workspace level, and the region is supported.</span></label></li>
+    <li><label><input type="checkbox"><span>Security has reviewed what context is sent to the model against the Tier 2 and Tier 3 items.</span></label></li>
+    <li><label><input type="checkbox"><span>A workspace instructions file and a shared skills folder exist and are owned by an administrator.</span></label></li>
+    <li><label><input type="checkbox"><span>A budget or cost control is set by an account administrator.</span></label></li>
+    <li><label><input type="checkbox"><span>Agent authors know that generated descriptions, expressions and benchmark SQL need the same review as hand-written ones.</span></label></li>
+  </ul>
+  </details>
 </section>
 
 </main>

@@ -147,7 +147,7 @@ def shelf_checks(browser, base):
     ctx = browser.new_context(java_script_enabled=False)
     pg = ctx.new_page()
     pg.goto(base)
-    check("without JavaScript all eight step headings are visible", pg.locator("section.step h2:visible").count() == 8)
+    check("without JavaScript all eight step headings are visible", pg.locator("section.step[id^=step-] h2:visible").count() == 8)
     check("without JavaScript all eight gates are visible", pg.locator("input[data-gate]:visible").count() == 8)
     ctx.close()
 
@@ -269,6 +269,39 @@ def steps567_checks(browser, base):
     ctx.close()
 
 
+def track_checks(browser, base):
+    ctx, pg = new_page(browser)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    check("developer track exists as a section", pg.locator("section.step#developer-track").count() == 1)
+    check("developer track is collapsed by default", pg.evaluate("document.querySelector('#developer-track details').open") is False)
+    check("sidebar links to the developer track", pg.locator("nav a[href='#developer-track']").count() == 1)
+    pg.click("#products a[href='#developer-track']")
+    check("link from the product table opens the track", pg.evaluate("document.querySelector('#developer-track details').open"))
+    before = pg.get_attribute(".meter", "aria-valuenow")
+    boxes = pg.locator("#developer-track ul.check input")
+    check("developer track has its own checklist", boxes.count() >= 4)
+    boxes.nth(0).check()
+    boxes.nth(1).check()
+    check("track checklist does not move the overall meter", pg.get_attribute(".meter", "aria-valuenow") == before)
+    pg.reload()
+    pg.wait_for_load_state("networkidle")
+    pg.evaluate("document.querySelector('#developer-track details').open = true")
+    check("track checklist persists", pg.locator("#developer-track ul.check input").nth(0).is_checked())
+    t = pg.locator("#developer-track").inner_text()
+    for term in (".assistant_instructions.md", "20,000", "SKILL.md", "partner-powered", "Unity Catalog permissions", "Last verified: 17 Oct 2026"):
+        check(f"developer track covers {term}", term.lower() in t.lower(), term)
+    ctx.close()
+    ctx, pg = new_page(browser)
+    pg.goto(base + "#developer-track")
+    pg.wait_for_load_state("networkidle")
+    check("deep link to the track expands it", pg.evaluate("document.querySelector('#developer-track details').open"))
+    pg.goto(base + "#step-9")
+    pg.wait_for_load_state("networkidle")
+    check("unknown hash loads without errors", not pg.errors, pg.errors)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -291,7 +324,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks]
 
 if __name__ == "__main__":
     sys.exit(run())
