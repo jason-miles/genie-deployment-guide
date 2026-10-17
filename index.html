@@ -41,6 +41,7 @@
       <li><a href="#step-5"><span class="n">05</span>Access &amp; consumption</a></li>
       <li><a href="#step-6"><span class="n">06</span>Monitor &amp; operate</a></li>
       <li><a href="#step-7"><span class="n">07</span>Staged rollout &amp; promotion</a></li>
+      <li><a href="#appendix"><span class="n">+</span>Tracker, risks &amp; first wave</a></li>
       <li><a href="#developer-track"><span class="n">GC</span>Genie Code track</a></li>
     </ol>
   </nav>
@@ -723,6 +724,55 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
 
   <label class="gate"><input type="checkbox" data-gate="step-7"><span><strong>Gate</strong>Each wave passed its go/no-go, a rollback has been rehearsed, and the production Agent matches the Git-recorded, benchmarked configuration.</span></label>
   <footer>Licensed under Apache 2.0. Features and limits change; check the linked Databricks documentation before running anything in production.</footer>
+</section>
+
+<!-- APPENDIX -->
+<section class="step" id="appendix">
+  <div class="step-head"><div class="step-no">+</div><h2>Tracker, risks and first wave</h2></div>
+  <p class="verified">Last verified: 17 Oct 2026. Entries are stored in this browser only.</p>
+
+  <h3>Milestone tracker</h3>
+  <p>One row per phase. Fill it in with the owner, the due date and the status, then download it for the project record.</p>
+  <div class="table-wrap"><table id="tracker">
+    <thead><tr><th>Milestone</th><th>Owner</th><th>Due date</th><th>Status</th><th>Notes or blockers</th></tr></thead>
+    <tbody>
+      <tr data-row="1"><td>Phase 1: technical validation (Step 04)</td><td><input class="trk-owner" aria-label="Owner, Technical validation" autocomplete="off"></td><td><input type="date" aria-label="Due date, Technical validation"></td><td><select class="trk-status" aria-label="Status, Technical validation"><option>Not started</option><option>In progress</option><option>Blocked</option><option>Done</option></select></td><td><input class="trk-notes" aria-label="Notes, Technical validation" autocomplete="off"></td></tr>
+      <tr data-row="2"><td>Phase 2: business validation (Step 04)</td><td><input class="trk-owner" aria-label="Owner, Business validation" autocomplete="off"></td><td><input type="date" aria-label="Due date, Business validation"></td><td><select class="trk-status" aria-label="Status, Business validation"><option>Not started</option><option>In progress</option><option>Blocked</option><option>Done</option></select></td><td><input class="trk-notes" aria-label="Notes, Business validation" autocomplete="off"></td></tr>
+      <tr data-row="3"><td>Phase 3: access and consumption (Step 05)</td><td><input class="trk-owner" aria-label="Owner, Access" autocomplete="off"></td><td><input type="date" aria-label="Due date, Access"></td><td><select class="trk-status" aria-label="Status, Access"><option>Not started</option><option>In progress</option><option>Blocked</option><option>Done</option></select></td><td><input class="trk-notes" aria-label="Notes, Access" autocomplete="off"></td></tr>
+      <tr data-row="4"><td>Phase 4: monitoring and onboarding (Step 06)</td><td><input class="trk-owner" aria-label="Owner, Monitoring" autocomplete="off"></td><td><input type="date" aria-label="Due date, Monitoring"></td><td><select class="trk-status" aria-label="Status, Monitoring"><option>Not started</option><option>In progress</option><option>Blocked</option><option>Done</option></select></td><td><input class="trk-notes" aria-label="Notes, Monitoring" autocomplete="off"></td></tr>
+      <tr data-row="5"><td>Phase 5: staged rollout (Step 07)</td><td><input class="trk-owner" aria-label="Owner, Rollout" autocomplete="off"></td><td><input type="date" aria-label="Due date, Rollout"></td><td><select class="trk-status" aria-label="Status, Rollout"><option>Not started</option><option>In progress</option><option>Blocked</option><option>Done</option></select></td><td><input class="trk-notes" aria-label="Notes, Rollout" autocomplete="off"></td></tr>
+    </tbody>
+  </table></div>
+  <p><button class="btn" id="csv" type="button">Download tracker as CSV</button></p>
+
+  <h3>Key risks and mitigations</h3>
+  <div class="table-wrap"><table id="risks">
+    <thead><tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>One Agent covers several domains and its answers get less accurate</td><td>High</td><td>High</td><td>One domain per Agent, five or fewer tables to start; split when scope grows (Steps 01 and 03)</td></tr>
+      <tr><td>No benchmark suite, so accuracy is invisible and drift goes unseen</td><td>Medium</td><td>High</td><td>Build benchmarks before pilots and gate on the agreed target (Step 04)</td></tr>
+      <tr><td>No owner, no backlog and no cadence, so quality decays within weeks</td><td>High</td><td>High</td><td>Name an Agent owner and a feedback reviewer; schedule the review cadence (Step 06)</td></tr>
+      <tr><td>The Agent is treated as the security boundary</td><td>Medium</td><td>High</td><td>Enforce access with Unity Catalog grants, row filters and column masks (Step 02)</td></tr>
+      <tr><td>A dashboard companion exposes fields or rows the chart does not display</td><td>Medium</td><td>High</td><td>Review the dashboard dataset scope before enabling the companion (Step 02)</td></tr>
+      <tr><td>Channels are added before the Agent is production-quality</td><td>Medium</td><td>Medium</td><td>Validate in the Agent UI first; add channels after the gate (Step 05)</td></tr>
+      <tr><td>Warehouse or question-rate limits are hit during a wave</td><td>Medium</td><td>Medium</td><td>Alerts on SLA and rate-limit proximity; size the warehouse; go/no-go per wave (Steps 06 and 07)</td></tr>
+      <tr><td>Business terms and data change, and answers drift</td><td>High</td><td>Medium</td><td>Weekly feedback review, monthly benchmark run, quarterly audit (Step 06)</td></tr>
+      <tr><td>Configuration differs between development and production</td><td>Medium</td><td>Medium</td><td>Promote from a Git-recorded export with bundles; re-run benchmarks before each promotion (Step 07)</td></tr>
+      <tr><td>A key stakeholder leaves and the Agent is orphaned</td><td>Low</td><td>High</td><td>Keep both a business and a technical stakeholder, and document the Agent&rsquo;s scope (Step 01)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Top five ways rollouts stall</h3>
+  <ol id="stall">
+    <li><strong>Cross-domain Agents.</strong> One Agent for everything is less accurate than three focused ones.</li>
+    <li><strong>Skipping benchmarks.</strong> Without a suite, accuracy is invisible and degradation is undetectable.</li>
+    <li><strong>Treating Genie as a feature, not a product.</strong> No owner, backlog or cadence means decay.</li>
+    <li><strong>Confusing the UI with the security boundary.</strong> Hiding a column in the Knowledge Store is not access control.</li>
+    <li><strong>Scaling channels too early.</strong> Teams or Slack on a marginal Agent amplify the wrong answers.</li>
+  </ol>
+
+  <h3>Recommended first wave</h3>
+  <p>Choose one representative, low-risk domain with a business and a technical stakeholder who have time set aside, five or fewer curated tables in Unity Catalog, an audience of about ten users, and no answer that carries severe risk if wrong. Use it to prove the whole path once: the metadata standard, the benchmark gate, the credential pattern, the access provisioning, the monitoring queries and the promotion from development to production. Then repeat for the next domain with the same checklist, and share patterns across Agent authors.</p>
 </section>
 
 <!-- DEVELOPER TRACK -->

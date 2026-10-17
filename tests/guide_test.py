@@ -302,6 +302,39 @@ def track_checks(browser, base):
     ctx.close()
 
 
+def appendix_checks(browser, base):
+    ctx, pg = new_page(browser, accept_downloads=True)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    check("appendix section exists and is in the sidebar", pg.locator("section#appendix").count() == 1 and pg.locator("nav a[href='#appendix']").count() == 1)
+    rows = pg.locator("#tracker tbody tr")
+    check("tracker has one row per phase P1 to P5", rows.count() == 5, rows.count())
+    check("each tracker row has owner, date, status and notes controls",
+          all(rows.nth(i).locator("input.trk-owner, input[type=date], select.trk-status, input.trk-notes").count() == 4 for i in range(5)))
+    opts = rows.nth(0).locator("select.trk-status option").all_inner_texts()
+    check("status options", opts == ["Not started", "In progress", "Blocked", "Done"], opts)
+    pg.fill("#tracker tbody tr:nth-child(1) input.trk-owner", "Ada")
+    pg.select_option("#tracker tbody tr:nth-child(2) select.trk-status", "Blocked")
+    pg.fill("#tracker tbody tr:nth-child(3) input.trk-notes", 'needs "SCIM" sync, then retest')
+    with pg.expect_download() as dl:
+        pg.click("#csv")
+    text = Path(dl.value.path()).read_text()
+    lines = [l for l in text.splitlines() if l]
+    check("CSV header", lines[0] == "Milestone,Owner,Due date,Status,Notes", lines[:1])
+    check("CSV has a header and five rows", len(lines) == 6, len(lines))
+    check("CSV carries the entered owner and status", '"Ada"' in lines[1] and '"Blocked"' in lines[2], lines[1:3])
+    check("CSV escapes quotes in notes", '"needs ""SCIM"" sync, then retest"' in lines[3], lines[3])
+    pg.reload()
+    pg.wait_for_load_state("networkidle")
+    check("tracker entries persist after reload", pg.input_value("#tracker tbody tr:nth-child(1) input.trk-owner") == "Ada" and pg.input_value("#tracker tbody tr:nth-child(2) select.trk-status") == "Blocked")
+    risks = pg.locator("#risks tbody tr")
+    check("risk register has at least eight rows with likelihood and impact", risks.count() >= 8 and all(risks.nth(i).locator("td").count() == 4 for i in range(risks.count())))
+    check("five ways rollouts stall", pg.locator("#stall li").count() == 5)
+    check("first wave guidance present", "first wave" in pg.locator("#appendix").inner_text().lower())
+    check("appendix raises no errors", not pg.errors, pg.errors)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -324,7 +357,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks]
+SECTIONS = [base_checks, shelf_checks, step0_checks, claims_checks, steps12_checks, steps34_checks, steps567_checks, track_checks, appendix_checks]
 
 if __name__ == "__main__":
     sys.exit(run())

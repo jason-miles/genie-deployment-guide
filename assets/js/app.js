@@ -284,4 +284,22 @@
   if (location.hash === '#developer-track') openTrack();
   addEventListener('hashchange', () => { if (location.hash === '#developer-track') openTrack(); });
   document.addEventListener('click', e => { if (e.target.closest('a[href="#developer-track"]')) openTrack(); });
+  // Milestone tracker: persisted, exported as CSV
+  const trkRows = $$('#tracker tbody tr');
+  const trkCells = tr => [...$$('input, select', tr)];
+  trkRows.forEach(tr => trkCells(tr).forEach((el, c) => {
+    const key = `genie-trk-${tr.dataset.row}-${c}`;
+    const v = store.getItem(key); if (v !== null) el.value = v;
+    el.addEventListener('input', () => store.setItem(key, el.value));
+  }));
+  $('#csv')?.addEventListener('click', () => {
+    const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+    const head = ['Milestone', 'Owner', 'Due date', 'Status', 'Notes'];
+    const body = trkRows.map(tr => [tr.cells[0].textContent.trim(), ...trkCells(tr).map(el => el.value)]);
+    const csv = head.join(',') + '\r\n' + body.map(r => r.map(q).join(',')).join('\r\n') + '\r\n';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'genie-rollout-tracker.csv';
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
 })();
