@@ -99,6 +99,59 @@ def base_checks(browser, base):
     ctx.close()
 
 
+def shelf_checks(browser, base):
+    ctx, pg = new_page(browser)
+    hosts = set()
+    pg.on("request", lambda r: hosts.add(r.url.split("/")[2]) if r.url.startswith("http") else None)
+    pg.goto(base)
+    pg.wait_for_load_state("networkidle")
+    cards = pg.locator("section.shelf a.res-card")
+    n = cards.count()
+    check("shelf has 1 to 6 cards", 1 <= n <= 6, n)
+    check("every card is a single link with an icon that loads",
+          all(pg.evaluate("(el)=>{const i=el.querySelector('img');return !!i && i.complete && i.naturalWidth>0}", cards.nth(i).element_handle()) for i in range(n)))
+    for i in range(n):
+        c = cards.nth(i)
+        kind = c.get_attribute("data-type")
+        href = c.get_attribute("href")
+        label = c.inner_text() + " " + (c.locator(".res-sr").text_content() or "")
+        no_aria = c.get_attribute("aria-label") is None
+        if kind == "pdf":
+            check(f"PDF card {i} downloads from assets/pdf", c.get_attribute("download") is not None and href.startswith("assets/pdf/") and no_aria and label.startswith("PDF") and "Downloads a PDF file" in label, (href, label))
+            if not ALLOW_MISSING_PDF:
+                r = ctx.request.get(base + href)
+                check(f"PDF card {i} file exists", r.status == 200 and r.body()[:4] == b"%PDF", r.status)
+        else:
+            rel = c.get_attribute("rel") or ""
+            check(f"blog card {i} opens safely in a new tab", kind == "blog" and href.startswith("https://") and c.get_attribute("target") == "_blank" and "noopener" in rel and "noreferrer" in rel and no_aria and label.startswith("BLOG") and "Opens in a new tab" in label, (href, rel, label))
+    # keyboard order and visible focus
+    pg.evaluate("document.activeElement.blur()")
+    seen = []
+    for _ in range(40):
+        pg.keyboard.press("Tab")
+        if pg.evaluate("document.activeElement.classList.contains('res-card')"):
+            seen.append(pg.evaluate("document.activeElement.getAttribute('href')"))
+            if len(seen) == 1:
+                check("focused card shows an outline", pg.evaluate("getComputedStyle(document.activeElement).outlineStyle") != "none")
+            if len(seen) == n:
+                break
+    expected = [cards.nth(i).get_attribute("href") for i in range(n)]
+    check("Tab visits cards in DOM order", seen == expected, seen)
+    rows = pg.evaluate("new Set([...document.querySelectorAll('section.shelf a.res-card')].map(e=>Math.round(e.getBoundingClientRect().top))).size")
+    check("shelf wraps to at most two rows at 1400px", rows <= 2, rows)
+    check("shelf sits above step 00", pg.evaluate("document.querySelector('section.shelf').compareDocumentPosition(document.getElementById('step-0')) & Node.DOCUMENT_POSITION_FOLLOWING") > 0)
+    check("shelf makes no external requests", hosts <= {base.split("/")[2]}, hosts)
+    ctx.close()
+
+    # Review Focus: JavaScript disabled
+    ctx = browser.new_context(java_script_enabled=False)
+    pg = ctx.new_page()
+    pg.goto(base)
+    check("without JavaScript all eight step headings are visible", pg.locator("section.step h2:visible").count() == 8)
+    check("without JavaScript all eight gates are visible", pg.locator("input[data-gate]:visible").count() == 8)
+    ctx.close()
+
+
 def run():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-I", "-m", "http.server", str(port), "--bind", "127.0.0.1",
@@ -121,7 +174,7 @@ def run():
     return 1 if failed else 0
 
 
-SECTIONS = [base_checks]
+SECTIONS = [base_checks, shelf_checks]
 
 if __name__ == "__main__":
     sys.exit(run())

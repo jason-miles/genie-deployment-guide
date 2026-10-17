@@ -57,6 +57,21 @@
   <p>Eight steps for taking a Genie Agent from a working demo to a governed, monitored service. Each step gives the action, the gate to pass, and the failure modes seen in practice.</p>
 </header>
 
+<section class="shelf" aria-labelledby="shelf-h">
+  <h2 id="shelf-h">Resources</h2>
+  <div class="res-list"></div>
+  <script type="application/json" id="shelf-data">
+  [
+    {"type": "blog", "title": "How to roll out Genie One", "href": "https://www.databricks.com/blog/how-roll-out-genie-one-step-step-enterprise-playbook", "icon": "assets/icons/blog.svg", "blurb": "Step-by-step enterprise playbook (Databricks blog, Sept 2026)"},
+    {"type": "pdf", "title": "Rollout plan and tracker", "href": "assets/pdf/rollout-plan.pdf", "icon": "assets/icons/pdf-rollout.svg", "blurb": "Phases, owners and exit criteria"},
+    {"type": "pdf", "title": "Technical onboarding checklist", "href": "assets/pdf/onboarding-checklist.pdf", "icon": "assets/icons/pdf-checklist.svg", "blurb": "Gates for taking an Agent live"},
+    {"type": "pdf", "title": "Benchmark checklist", "href": "assets/pdf/benchmark-checklist.pdf", "icon": "assets/icons/pdf-benchmark.svg", "blurb": "Build, run and read benchmarks"},
+    {"type": "pdf", "title": "Genie One vs Agent vs Code", "href": "assets/pdf/genie-one-agent-code.pdf", "icon": "assets/icons/pdf-compare.svg", "blurb": "One-page product comparison"},
+    {"type": "blog", "title": "Designing effective Genie Agents", "href": "https://www.databricks.com/blog/designing-effective-genie-agents-single-prompt", "icon": "assets/icons/blog-2.svg", "blurb": "Start narrow, benchmark, then widen (Databricks blog, Aug 2026)"}
+  ]
+  </script>
+</section>
+
 <!-- STEP 0 -->
 <section class="step" id="step-0">
   <div class="step-head"><div class="step-no">00</div><h2>Choose your path</h2></div>
@@ -139,6 +154,7 @@
   <ul id="pal-list" role="listbox" aria-label="Search results" tabindex="0"></ul>
   <p class="pal-foot">Enter to jump. Esc to close.</p>
 </dialog>
+<script src="assets/js/shelf.js" defer></script>
 <script src="assets/js/app.js" defer></script>
 </body>
 </html>

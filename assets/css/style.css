@@ -337,3 +337,19 @@ a.next:hover { border-color: var(--ink); }
   .hero p { color: #333; }
   .gate { background: none; color: #000; border-color: #000; }
 }
+
+/* Resource shelf */
+.shelf { margin: var(--s5, 2rem) 0; }
+.shelf h2 { font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 var(--s3, 1rem); }
+.res-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; }
+.res-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); text-decoration: none; }
+.res-card:hover { border-color: var(--ink); }
+.res-frame { display: flex; justify-content: center; padding: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+.res-frame img { width: 72px; height: 72px; }
+.res-badge { align-self: flex-start; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--ink); color: var(--ink); }
+.res-badge.pdf { background: var(--ink); color: var(--bg); }
+.res-title { font-weight: 700; font-size: .9375rem; line-height: 1.3; }
+.res-blurb { font-size: .8125rem; color: var(--ink-2); line-height: 1.35; }
+@media print { .shelf { display: none; } }
+.res-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.res-card { position: relative; }
