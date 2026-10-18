@@ -42,6 +42,7 @@
       <li><a href="#step-6"><span class="n">06</span>Monitor &amp; operate</a></li>
       <li><a href="#step-7"><span class="n">07</span>Staged rollout &amp; promotion</a></li>
       <li><a href="#appendix"><span class="n">+</span>Tracker, risks &amp; first wave</a></li>
+      <li><a href="#worked-example"><span class="n">EX</span>Worked example</a></li>
       <li><a href="#developer-track"><span class="n">GC</span>Genie Code track</a></li>
     </ol>
   </nav>
@@ -56,7 +57,7 @@
 <header class="hero">
   <div class="eyebrow">Databricks &middot; Genie</div>
   <h1>Genie deployment guide: from proof of concept to enterprise rollout</h1>
-  <p>Eight steps for taking a Genie Agent from a working demo to a governed, monitored service. Each step gives the action, the gate to pass, and the failure modes seen in practice. The SQL, CLI and bundle commands were run on a Databricks test workspace on 17 Oct 2026 and each code block says so; still try them in a non-production workspace first, because behaviour and Beta commands change.</p>
+  <p>Eight steps for taking a Genie Agent from a working demo to a governed, monitored service. Each step gives the action, the gate to pass, and the failure modes seen in practice. The SQL, CLI and bundle commands were run on a Databricks test workspace on 17 and 18 Oct 2026 and each code block says so; still try them in a non-production workspace first, because behaviour and Beta commands change.</p>
 </header>
 
 <section class="shelf" aria-labelledby="shelf-h">
@@ -355,6 +356,26 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
   ALTER COLUMN email SET MASK {{cat:main}}.{{sch:sales}}.mask_email;</code></pre>
   <p>Masks and row filters apply before data reaches the model: the documentation states that all data sent to AI assistive feature models respects the querying user&rsquo;s Unity Catalog permissions. <!-- C-34 --> If example SQL or trusted assets call Unity Catalog functions, also grant EXECUTE on those functions (or on a dedicated functions schema) to the user group, and give each function a comment that says what it does and what it expects. This is field guidance.</p>
   <div class="callout warn"><strong>Hiding is not access control</strong>Hiding a column in the Knowledge Store changes what Genie considers. It does not stop a user who has SELECT from querying the column elsewhere. Use grants, filters and masks.</div>
+
+  <h4>Replacing Power BI row-level security</h4>
+  <p>Power BI roles filter rows with DAX, and Genie never sees them, because Genie queries Unity Catalog. Move each rule into Unity Catalog once, at the gold layer, and every consumer (Agents, Genie One, dashboards, notebooks) inherits it.</p>
+  <ol>
+    <li>List every Power BI role and its DAX filter, and note which dimension it filters: site, region or business unit. A rule built on <code>USERPRINCIPALNAME()</code> becomes a mapping on <code>current_user()</code>.</li>
+    <li>Create one account group per role in your identity provider, so access follows directory membership.</li>
+    <li>Store the role-to-value mapping in a small table, so one function serves every role and a new role is a new row, not new code.</li>
+    <li>Apply the function as a row filter on each gold table that carries the key.</li>
+    <li>Test as a member of each role and as a user in none, and compare row counts with what Power BI shows that role.</li>
+    <li>Keep Power BI row-level security on during the transition, then retire the duplicate rules.</li>
+  </ol>
+<pre data-lang="sql" data-tested="yes"><code>CREATE TABLE {{cat:main}}.{{sch:hr}}.site_access (group_name STRING, site_key INT);
+INSERT INTO {{cat:main}}.{{sch:hr}}.site_access VALUES ('hr_americas', 1), ('hr_americas', 2), ('hr_leadership', 1), ('hr_leadership', 2), ('hr_leadership', 3);
+
+CREATE FUNCTION {{cat:main}}.{{sch:hr}}.site_filter(site_key INT)
+  RETURN EXISTS (SELECT 1 FROM {{cat:main}}.{{sch:hr}}.site_access a
+                 WHERE a.site_key = site_filter.site_key AND is_account_group_member(a.group_name));
+
+ALTER TABLE {{cat:main}}.{{sch:hr}}.fact_vacancy SET ROW FILTER {{cat:main}}.{{sch:hr}}.site_filter ON (site_key);</code></pre>
+  <p>A user in no mapped group sees no rows, which is the safe default. The block above was run as written on 18 Oct 2026. A separate run with workspace groups and <code>is_member</code> returned only the mapped sites, and a user in none of the account groups saw zero rows. <!-- C-35 --> Also grant the mapping table to nobody but its owners, since it defines who sees what.</p>
 
   <h3>2.7 Set Agent permissions</h3>
   <div class="table-wrap">
@@ -809,6 +830,83 @@ databricks bundle deploy -t prod --profile &lt;prod-profile&gt;</code></pre>
 
   <h3>Recommended first wave</h3>
   <p>Choose one representative, low-risk domain with a business and a technical stakeholder who have time set aside, five or fewer curated tables in Unity Catalog, an audience of about ten users, and no answer that carries severe risk if wrong. Use it to prove the whole path once: the metadata standard, the benchmark gate, the credential pattern, the access provisioning, the monitoring queries and the promotion from development to production. Then repeat for the next domain with the same checklist, and share patterns across Agent authors.</p>
+</section>
+
+<!-- WORKED EXAMPLE -->
+<section class="step" id="worked-example">
+  <div class="step-head"><div class="step-no">EX</div><h2>Worked example: HR workforce planning</h2></div>
+  <p class="lede">A small, complete build you can copy: headcount, hires, terminations, turnover and open vacancies for HR leadership. It replaces a manual spreadsheet and answers the questions executives ask first.</p>
+  <p class="verified">Built and run on a test workspace on 18 Oct 2026 with synthetic data: 4,200 employees, 900 vacancies and 33 months of headcount. No real employee data. <!-- C-36 --></p>
+
+  <h3>EX.1 What the Agent sees</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Object</th><th>Type</th><th>Grain</th><th>Answers</th></tr></thead>
+    <tbody>
+      <tr><td><code>workforce_headcount_metrics</code></td><td>Metric view</td><td>Month, site, job level, business unit</td><td>Headcount, hires, terminations, net change, turnover</td></tr>
+      <tr><td><code>workforce_vacancy_metrics</code></td><td>Metric view</td><td>Vacancy</td><td>Open vacancies, fill rate, days to fill</td></tr>
+      <tr><td><code>employee_detail</code></td><td>View</td><td>Employee (pseudonymous ID)</td><td>Contract expirations and employee-level detail</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Three objects, under the five-or-fewer starting target. The star-schema tables behind them stay out of the Agent; the joins live inside the metric views, so no join specs are needed.</p>
+
+  <h3>EX.2 Define the measures once</h3>
+<pre data-lang="yaml" data-tested="yes"><code>version: 1.1
+comment: "Headcount, hires and terminations by month, site, job level and business unit. Headcount is a month-end snapshot: use one month at a time."
+source: {{cat:main}}.{{sch:hr}}.fact_headcount_monthly
+joins:
+  - name: site
+    source: {{cat:main}}.{{sch:hr}}.dim_site
+    on: source.site_key = site.site_key
+dimensions:
+  - name: month
+    expr: month_start
+    comment: "Month the figures refer to (first day of month)"
+    display_name: Month
+  - name: region
+    expr: site.region
+    comment: "Continent-level region"
+    display_name: Region
+measures:
+  - name: headcount
+    expr: SUM(headcount)
+    comment: "Employees on payroll at month end. Snapshot: filter to a single month, never add months together"
+    display_name: Headcount
+    synonyms: ["employees", "staff"]
+  - name: monthly_turnover_rate
+    expr: SUM(terminations) / NULLIF(SUM(headcount), 0)
+    comment: "Terminations divided by month-end headcount"
+    display_name: Monthly turnover rate
+    format:
+      type: percentage</code></pre>
+  <p>Create it with <code>CREATE VIEW ... WITH METRICS LANGUAGE YAML AS $$ ... $$</code> and query it with <code>MEASURE()</code>. Every dimension and measure carries a comment and a display name, because that text is what Genie reads. The snapshot warning in the comment is what stops Genie adding twelve months of headcount together.</p>
+
+  <h3>EX.3 Govern before you expose</h3>
+  <p>The example applies a row filter on site and a mask on the termination reason, both from step 2.6, so a user outside HR leadership sees fewer sites and a masked reason. Sensitive HR data is the reason to do this before the first demo, not after.</p>
+
+  <h3>EX.4 Configure the Agent</h3>
+  <ul>
+    <li><strong>Sample questions:</strong> &ldquo;What is the current headcount by region?&rdquo;, &ldquo;Which sites have the most open vacancies?&rdquo;, &ldquo;How many contracts expire in the next 90 days?&rdquo;, &ldquo;What was monthly turnover over the last 12 months?&rdquo;</li>
+    <li><strong>Entity matching</strong> on region, site, job level, business unit and vacancy status, so a user typing a site name resolves to the stored value.</li>
+    <li><strong>One short text instruction</strong>, because the structured layers could not express it:</li>
+  </ul>
+<pre data-lang="text"><code>## DISAMBIGUATION
+- "Current" headcount means the latest month in workforce_headcount_metrics. Never add headcount across months.
+- "Last N months" means the N most recent months that have data, ending at the latest month, not counting from today.
+- "Open" vacancies means vacancy_status = Open.</code></pre>
+
+  <h3>EX.5 Benchmark it</h3>
+  <p>Twelve benchmarks, each a plain-English question with checked SQL, covering current headcount, open vacancies by site, fill rate by business unit, time to fill by job level, hires and terminations, turnover, contract expirations and net change. The first run scored 11 of 12. The miss was &ldquo;last 12 months&rdquo;: the Agent counted back from today, the current month had no data, and it returned 11 months. Adding the &ldquo;last N months&rdquo; rule above and anchoring the benchmark the same way gave 12 of 12. See step 3.1.</p>
+
+  <h3>EX.6 Adapt it to your data</h3>
+  <ul class="check">
+    <li><label><input type="checkbox" data-key="ex-map-gold-tables-to-the-three-shapes"><span>Map your gold tables to the three shapes: a month-end headcount snapshot, a vacancy fact and an employee detail view.</span></label></li>
+    <li><label><input type="checkbox" data-key="ex-put-every-kpi-in-a-metric-view"><span>Put every KPI in a metric view with a comment, display name and synonyms, and say which measures are snapshots.</span></label></li>
+    <li><label><input type="checkbox" data-key="ex-move-power-bi-rules-into-unity-catalog"><span>Move row-level rules into Unity Catalog (step 2.6) before the first executive demo.</span></label></li>
+    <li><label><input type="checkbox" data-key="ex-write-twelve-benchmarks-before-demoing"><span>Write 10 to 15 benchmarks with checked SQL before demoing, and anchor every relative date the same way as the Agent.</span></label></li>
+    <li><label><input type="checkbox" data-key="ex-embed-only-after-the-score"><span>Embed or share only after the benchmark score clears your gate (step 4.2 and step 5.1).</span></label></li>
+  </ul>
 </section>
 
 <!-- DEVELOPER TRACK -->

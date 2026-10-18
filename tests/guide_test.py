@@ -363,7 +363,7 @@ def tested_checks(browser, base):
     runnable = [t for lang, t in states if lang in ("sql", "bash", "yaml")]
     check("every SQL, bash and YAML block was run on a workspace", runnable and all(t == "yes" for t in runnable), states)
     check("example files are marked n/a, not tested", all(t == "n/a" for lang, t in states if lang == "md"), states)
-    check("tested blocks show a visible label with the date", pg.evaluate("[...document.querySelectorAll('pre[data-tested=yes]')].every(p=>{const c=getComputedStyle(p,'::before').content;return c.includes('Run on a test workspace')&&c.includes('17 Oct 2026')})"))
+    check("tested blocks show a visible label with the date", pg.evaluate("[...document.querySelectorAll('pre[data-tested=yes]')].every(p=>{const c=getComputedStyle(p,'::before').content;return c.includes('Run on a test workspace')&&c.includes('17 to 18 Oct 2026')})"))
     check("the hero says the commands were run", "were run" in pg.inner_text(".hero").lower() and "have not been run" not in pg.inner_text(".hero").lower())
     pg.locator("pre[data-lang]").first.scroll_into_view_if_needed()
     pg.locator("pre .copy").first.click()
