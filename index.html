@@ -895,10 +895,11 @@ measures:
 <pre data-lang="text"><code>## DISAMBIGUATION
 - "Current" headcount means the latest month in workforce_headcount_metrics. Never add headcount across months.
 - "Last N months" means the N most recent months that have data, ending at the latest month, not counting from today.
-- "Open" vacancies means vacancy_status = Open.</code></pre>
+- "Open" or "currently open" vacancies means every vacancy with vacancy_status = Open, whenever it was opened. The latest-month rule is for headcount only.</code></pre>
 
   <h3>EX.5 Benchmark it</h3>
   <p>Twelve benchmarks, each a plain-English question with checked SQL, covering current headcount, open vacancies by site, fill rate by business unit, time to fill by job level, hires and terminations, turnover, contract expirations and net change. The first run scored 11 of 12. The miss was &ldquo;last 12 months&rdquo;: the Agent counted back from today, the current month had no data, and it returned 11 months. Adding the &ldquo;last N months&rdquo; rule above and anchoring the benchmark the same way gave 12 of 12. See step 3.1.</p>
+  <p>A clean rebuild from the scripts then scored 11 of 12 once: &ldquo;How many critical roles are currently open?&rdquo; failed because the Agent applied the latest-month headcount rule to vacancies and kept only vacancies opened in the latest month. The fix was to scope each rule to the measure it belongs to, as in the instruction above, after which the rebuilt Agent scored 12 of 12 twice. Two lessons: benchmark results vary from run to run, so re-run before you trust a pass, and a rule written for one measure can leak into another unless the instruction says where it stops. This is field guidance from testing.</p>
 
   <h3>EX.6 Adapt it to your data</h3>
   <ul class="check">
