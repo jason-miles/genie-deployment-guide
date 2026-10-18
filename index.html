@@ -228,7 +228,7 @@
   <p>Having both protects the Agent. If one person leaves, the other keeps it alive. Without a business stakeholder, the technical owner tends to chase perfect accuracy while the business users wait.</p>
 
   <h3>1.4 Collect the questions</h3>
-  <p>Ask the business stakeholder, and two or three colleagues, for the 20 to 50 questions the Agent should answer. Several people produce several phrasings of the same question. Then review the list for:</p>
+  <p>Ask the business stakeholder, and two or three colleagues, for the 20 to 50 questions the Agent should answer. Several people produce several phrasings of the same question. This long list is the raw material: step 3 uses 10 to 20 representative questions to scope the build, and step 4 turns the 15 to 20 most likely into the benchmark suite. Then review the list for:</p>
   <ul class="check">
     <li><label><input type="checkbox" data-key="whether-questions-assume-a-calendar"><span>Whether questions assume a calendar year or a fiscal year, and when the fiscal year starts.</span></label></li>
     <li><label><input type="checkbox" data-key="which-metrics-and-kpis-recur"><span>Which metrics and KPIs recur, and the terms used for them.</span></label></li>
@@ -353,6 +353,7 @@ CREATE FUNCTION {{cat:main}}.{{sch:sales}}.mask_email(email STRING)
   RETURN CASE WHEN is_account_group_member('pii_readers') THEN email ELSE '***' END;
 ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
   ALTER COLUMN email SET MASK {{cat:main}}.{{sch:sales}}.mask_email;</code></pre>
+  <p>Masks and row filters apply before data reaches the model: the documentation states that all data sent to AI assistive feature models respects the querying user&rsquo;s Unity Catalog permissions. <!-- C-34 --> If example SQL or trusted assets call Unity Catalog functions, also grant EXECUTE on those functions (or on a dedicated functions schema) to the user group, and give each function a comment that says what it does and what it expects. This is field guidance.</p>
   <div class="callout warn"><strong>Hiding is not access control</strong>Hiding a column in the Knowledge Store changes what Genie considers. It does not stop a user who has SELECT from querying the column elsewhere. Use grants, filters and masks.</div>
 
   <h3>2.7 Set Agent permissions</h3>
@@ -376,11 +377,21 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
     <thead><tr><th>Tier</th><th>Items</th></tr></thead>
     <tbody>
       <tr><td>Tier 1: inherited from the platform</td><td>Unity Catalog governance; audit logging; network controls such as IP access lists and Private Link; encryption at rest and in transit; Databricks does not train foundation models on customer prompts, responses or data.</td></tr>
-      <tr><td>Tier 2: depends on your configuration</td><td>The credential model per pattern; dashboard companion data scope; cross-Geo processing for AI features; conversation history storage and retention; what is sent to models (prompts, relevant metadata and values, errors, input queries, not full tables); whether partner-powered AI features are enabled at account and workspace level; customer-managed keys (field guidance; confirm availability for your Agents).</td></tr>
-      <tr><td>Tier 3: needs formal review</td><td>Regulated data such as HIPAA, PCI or FedRAMP; data residency; your AI usage policy; whether result downloads should be restricted (Workspace, Settings, Security, SQL results download); retention and deletion.</td></tr>
+      <tr><td>Tier 2: depends on your configuration</td><td>The credential model per pattern; dashboard companion data scope; cross-Geo processing for AI features; conversation history storage and retention; what is sent to models (prompts, relevant metadata and values, errors, input queries, not full tables); whether partner-powered AI features are enabled at account and workspace level (if the setting is off, Agents chat and Agent mode, Genie One chat and the dashboard companion are unavailable rather than served by another model, and the setting is off by default on workspaces with a compliance security profile) <!-- C-31 -->; customer-managed keys (field guidance; confirm availability for your Agents).</td></tr>
+      <tr><td>Tier 3: needs formal review</td><td>Regulated data such as PHI, PCI, IRAP or FedRAMP, which needs a compliance security profile with the relevant standard added <!-- C-34 -->; data residency and regional availability (see below); your AI usage policy; whether result downloads should be restricted (Workspace, Settings, Security, SQL results download); retention and deletion.</td></tr>
     </tbody>
   </table>
   </div>
+  <h4>Regional availability and data residency</h4>
+  <p>Genie features are Designated Services: if the service is available in your workspace&rsquo;s Geo, your content is processed there. Some surfaces are not native to every Geo and show as available only when cross-Geo processing is enabled; enabling it lets content be processed in other Geos, while stored data stays in the workspace&rsquo;s Geo. An account setting enforces processing within the workspace Geography, and turning it on makes those surfaces unavailable rather than rerouting them. <!-- C-32 --> Check every surface (Agents chat, Agent mode, Genie One chat, dashboards, Genie Code) separately in the Designated Services table for your cloud, because availability differs by surface. Before deploying outside the US and EU, answer these with your security team:</p>
+  <ul class="check">
+    <li><label><input type="checkbox" data-key="each-genie-surface-is-available"><span>Each Genie surface is available, available with cross-Geo processing, or not available in your Geo.</span></label></li>
+    <li><label><input type="checkbox" data-key="your-regulator-accepts-processing-outside"><span>Your regulator accepts content being processed outside the country while stored data stays in the Geo; if not, the surface cannot be used from that region today.</span></label></li>
+    <li><label><input type="checkbox" data-key="partner-powered-ai-allowed-by-policy"><span>Partner-powered AI features are allowed by policy, since several surfaces need them.</span></label></li>
+    <li><label><input type="checkbox" data-key="a-compliance-security-profile-is"><span>A compliance security profile is, or is not, required, and which standard.</span></label></li>
+    <li><label><input type="checkbox" data-key="a-workspace-in-another-geo"><span>A workspace in another Geo would, or would not, meet the requirement.</span></label></li>
+    <li><label><input type="checkbox" data-key="sensitive-columns-are-masked-before"><span>Sensitive columns are masked before go-live, and external sources and connections for Genie One are restricted.</span></label></li>
+  </ul>
 
   <label class="gate"><input type="checkbox" data-gate="step-2"><span><strong>Gate</strong>Tables are documented in Unity Catalog, grants, filters and masks are reviewed by a security reviewer, and the credential pattern and compliance tier items are recorded.</span></label>
 </section>
@@ -490,7 +501,8 @@ WHERE region = :region AND order_quarter = :quarter;</code></pre>
 databricks genie genie-create-eval-run {{spc:01ef0000000000000000000000000000}} --profile &lt;profile&gt;
 databricks genie genie-get-eval-run {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;
 databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}} &lt;eval-run-id&gt; --profile &lt;profile&gt;</code></pre>
-  <div class="callout note"><strong>The 80% gate</strong>Field guidance is to hold an Agent at about 80% benchmark accuracy before promoting it. This number is not in the public documentation, so treat it as a starting point and set the threshold per use case. Below the gate, an Agent is not ready regardless of how it feels in a demo. <!-- C-06 --></div>
+  <p>When a benchmark fails, fix in this order and re-run: correct or add the expected SQL; add an example query; widen the instructions only if the rule applies broadly; simplify the data model; then add a Unity Catalog function. Test the data model outside Genie first, because the field may simply be missing. This order is field guidance.</p>
+  <div class="callout note"><strong>The 80% gate</strong>Field guidance is to hold an Agent at about 80% benchmark accuracy before promoting it. This number is not in the public documentation, so treat it as a starting point and set the threshold per use case, and hold critical questions to a higher bar, often 90% or more. Below the gate, an Agent is not ready regardless of how it feels in a demo. <!-- C-06 --></div>
 </div>
   <div data-pdf="onboarding-checklist">
 <h3>4.3 Technical validation</h3>
@@ -555,6 +567,7 @@ databricks genie genie-list-eval-results {{spc:01ef0000000000000000000000000000}
     <li><strong>Dev, staging, prod in one region:</strong> use the production workspace, so users consume production content.</li>
     <li><strong>Several workspaces or regions:</strong> either add users to each workspace that holds content they need, or create a dedicated consumer workspace and publish the Agents and dashboards to it with bundles or the Agents API.</li>
   </ul>
+  <p>To keep Consumer-only users from inheriting broader default entitlements, use the workspace setting &ldquo;Choose entitlements when adding principals to workspaces&rdquo; (Settings, Advanced) before adding them. For Genie One chat across Agents, give the user group CAN USE on one SQL warehouse. Where users span data-residency jurisdictions, use one consumer workspace per jurisdiction and reach non-local data through Delta Sharing. All three are field guidance; confirm them for your cloud.</p>
   <p>Business users need SELECT on the Unity Catalog objects the Agents use, granted through groups. Share each Agent with the group at CAN RUN. Sharing options include workspace folder inheritance, specific users or groups, all account users, a link for privileged users, and individual conversations. <!-- C-13 --> A custom account URL, where available, lets users sign in once and move across workspaces; this is field guidance.</p>
 <pre data-lang="bash" data-tested="yes"><code># Smoke-test an Agent from the CLI as the signed-in user
 databricks genie start-conversation {{spc:01ef0000000000000000000000000000}} "What was revenue last quarter?" --profile &lt;profile&gt;
@@ -567,7 +580,8 @@ databricks genie ask "What tables exist?" --profile &lt;profile&gt;</code></pre>
     <li>Authenticate with OAuth: service principal OAuth (M2M) for unattended workloads, user OAuth (U2M) where a browser flow exists. A user token keeps per-user Unity Catalog privileges. <!-- C-09 --></li>
     <li>Poll message status every 1 to 5 seconds until it is COMPLETED, FAILED or CANCELLED, back off exponentially up to one minute, and stop after about 10 minutes. <!-- C-09 --></li>
     <li>Start a new conversation for each user session, so earlier context does not leak into the next.</li>
-    <li>Add request queuing, retry logic and logging in the calling application.</li>
+    <li>Add request queuing, retry logic and logging in the calling application. Add jitter to the backoff and cache answers to frequent questions.</li>
+    <li>Do not serve every app user through one shared token or service principal. You lose per-user Unity Catalog checks and per-user audit, and all traffic counts against one set of limits.</li>
     <li>The API returns tables and SQL, not rendered charts. Render visuals in your own UI.</li>
     <li>Every Genie query still runs on the attached warehouse. Plan warehouse capacity separately from API rate limits.</li>
     <li>Field guidance on limits: 20 questions per minute per workspace in the UI and 5 per minute on the API free tier, across all Agents, with only POST requests counted. These figures are not in the public documentation; confirm them and ask about higher capacity. <!-- C-07 --></li>
@@ -603,10 +617,11 @@ FROM system.query.history
 WHERE query_source.genie_space_id = '{{spc:01ef0000000000000000000000000000}}'
 ORDER BY start_time DESC
 LIMIT 100;</code></pre>
+  <p>Changes to the partner-powered AI features setting are captured as account events in the audit log, so review them with your other account-level setting changes. <!-- C-31 --></p>
   <p>Cost and capacity appear in <code>system.billing.usage</code> (warehouse consumption) and <code>system.compute.warehouse_events</code> (scaling triggered by Genie load).</p>
 
   <h3>6.3 Alerts</h3>
-  <p>There is no Genie-native alert. Configure Databricks SQL Alerts on queries over the audit and warehouse tables for: spikes in conversations or users, spikes in negative feedback, rising error rates, usage approaching the rate limits, and the SQL warehouse breaking its SLA.</p>
+  <p>There is no Genie-native alert. Configure Databricks SQL Alerts on queries over the audit and warehouse tables for: spikes in conversations or users, spikes in negative feedback (ratings are audited as <code>updateConversationMessageFeedback</code> under <code>aibiGenie</code> <!-- C-33 -->), rising error rates, usage approaching the rate limits, and the SQL warehouse breaking its SLA.</p>
 
   <h3>6.4 Limits to plan around</h3>
   <div class="table-wrap">
