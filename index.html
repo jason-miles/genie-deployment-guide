@@ -412,6 +412,7 @@ ALTER TABLE {{cat:main}}.{{sch:sales}}.customers
     <li><strong>Text instructions.</strong> Terminology, formatting and clarification behaviour. They iterate quickly but are open to interpretation.</li>
   </ol>
   <p>Each Agent has a limit of 100 instructions, where every example SQL query, every SQL function and the whole general-instructions block counts as one. <!-- C-11 --></p>
+  <p><strong>Define time windows once.</strong> Phrases such as &ldquo;current&rdquo;, &ldquo;last 12 months&rdquo; and &ldquo;this year&rdquo; are ambiguous when the data ends before today. In a test build, an Agent counted &ldquo;last 12 months&rdquo; back from the current date and silently returned 11 months of data, because the current month had no rows yet. State the rule in a text instruction or an example SQL, for example: &ldquo;Last N months means the N most recent months that have data, ending at the latest month in the table.&rdquo; Write the matching benchmark with the same anchor. This is field guidance from testing.</p>
 
   <h3>3.2 What the Knowledge Store holds</h3>
   <p>Table and column descriptions, synonyms, join relationships, SQL expressions, prompt matching settings and column values. Everything in it is scoped to the Agent and does not change Unity Catalog. <!-- C-27 --> Turn on entity matching for categorical columns (regions, statuses, product names) so a prompt that says &ldquo;Florida&rdquo; resolves to a stored value of &ldquo;FL&rdquo;, and enable format assistance on important columns so Genie sees representative values. Define join relationships so joins are consistent, or pre-join frequently joined tables into views.</p>
@@ -484,7 +485,7 @@ WHERE region = :region AND order_quarter = :quarter;</code></pre>
 
   <div data-pdf="benchmark-checklist">
 <h3>4.1 Build the benchmark suite</h3>
-  <p>A benchmark is a question paired with the SQL that answers it correctly. Cover the 15 to 20 questions users are most likely to ask, with two to four phrasings each: roughly 30 to 80 benchmarks. An Agent supports up to 500. <!-- C-05 --> Use the auto-suggested benchmarks to seed the set. Cover these categories:</p>
+  <p>A benchmark is a question paired with the SQL that answers it correctly. Cover the 15 to 20 questions users are most likely to ask, with two to four phrasings each: roughly 30 to 80 benchmarks. An Agent supports up to 500. <!-- C-05 --> Write relative-date questions (&ldquo;current&rdquo;, &ldquo;last 12 months&rdquo;) with the same anchor you gave the Agent in step 3, or a correct answer will be marked wrong. Use the auto-suggested benchmarks to seed the set. Cover these categories:</p>
   <ul>
     <li>Simple aggregations: &ldquo;What is total revenue?&rdquo;</li>
     <li>Time-based queries: &ldquo;How did sales compare month over month?&rdquo;</li>
